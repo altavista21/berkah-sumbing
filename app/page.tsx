@@ -78,6 +78,16 @@ export default function Page() {
   const [menu, setMenu] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [productForm, setProductForm] = useState({
+    id: "",
+    name: "",
+    category: "",
+    price: "",
+    stock: "",
+    sku: "",
+    barcode: ""
+  });
+  const [productEditing, setProductEditing] = useState(false);
 
   const loadCatalog = () => {
     try {
@@ -301,6 +311,102 @@ export default function Page() {
       setProcessing(false);
     }
   };
+
+  const resetProductForm = () => {
+    setProductForm({
+      id: "",
+      name: "",
+      category: "",
+      price: "",
+      stock: "",
+      sku: "",
+      barcode: ""
+    });
+    setProductEditing(false);
+  };
+
+  const saveProduct = () => {
+    const name = productForm.name.trim();
+    const category = productForm.category.trim();
+    const price = Number(productForm.price);
+    const stock = Number(productForm.stock);
+    const sku = productForm.sku.trim();
+    const barcode = productForm.barcode.trim();
+
+    if (!name || !category || !sku || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) {
+      setNotice("Lengkapi nama, kategori, harga, stok, dan SKU dengan benar.");
+      return;
+    }
+
+    try {
+      const latest = readLocal<Product[]>("berkah-sumbing-products", products);
+      const duplicateSku = latest.some(p => p.sku === sku && p.id !== productForm.id);
+      if (duplicateSku) {
+        setNotice("SKU sudah digunakan produk lain.");
+        return;
+      }
+
+      const duplicateBarcode = barcode && latest.some(p => p.barcode === barcode && p.id !== productForm.id);
+      if (duplicateBarcode) {
+        setNotice("Barcode sudah digunakan produk lain.");
+        return;
+      }
+
+      const product: Product = {
+        id: productForm.id || crypto.randomUUID(),
+        name,
+        category,
+        price,
+        stock,
+        sku,
+        barcode: barcode || null
+      };
+
+      const next = productForm.id
+        ? latest.map(p => p.id === productForm.id ? product : p)
+        : [product, ...latest];
+
+      localStorage.setItem("berkah-sumbing-products", JSON.stringify(next));
+      setProducts(next);
+      resetProductForm();
+      setNotice(productForm.id ? "Produk berhasil diperbarui." : "Produk berhasil ditambahkan.");
+    } catch {
+      setNotice("Produk gagal disimpan ke perangkat.");
+    }
+  };
+
+  const editProduct = (product: Product) => {
+    setProductForm({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: String(product.price),
+      stock: String(product.stock),
+      sku: product.sku,
+      barcode: product.barcode ?? ""
+    });
+    setProductEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const deleteProduct = (id: string) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    if (!window.confirm(`Hapus produk "${product.name}"?`)) return;
+
+    try {
+      const latest = readLocal<Product[]>("berkah-sumbing-products", products);
+      const next = latest.filter(p => p.id !== id);
+      localStorage.setItem("berkah-sumbing-products", JSON.stringify(next));
+      setProducts(next);
+      if (productForm.id === id) resetProductForm();
+      setNotice("Produk berhasil dihapus.");
+    } catch {
+      setNotice("Produk gagal dihapus.");
+    }
+  };
+
+  const productCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
   return (
     <main className="shell">
@@ -564,6 +670,71 @@ export default function Page() {
 
               {notice && <div className="notice">{notice}</div>}
             </aside>
+          </div>
+        ) : active === "Produk" ? (
+          <div className="dashboard">
+            <div className="head">
+              <div>
+                <h1>Produk</h1>
+                <p>Kelola katalog produk yang tersimpan di perangkat ini.</p>
+              </div>
+              <button className="primary" onClick={resetProductForm}>
+                <Plus size={16} /> Produk Baru
+              </button>
+            </div>
+
+            <div className="productmanager">
+              <section className="formcard">
+                <div className="formtitle">
+                  <div>
+                    <b>{productEditing ? "Edit Produk" : "Tambah Produk"}</b>
+                    <small>{productEditing ? "Perbarui data produk." : "Masukkan produk baru."}</small>
+                  </div>
+                  {productEditing && <button className="clear" onClick={resetProductForm}>Batal</button>}
+                </div>
+                <div className="formgrid">
+                  <label>Nama Produk<input value={productForm.name} onChange={e => setProductForm(f => ({...f, name: e.target.value}))} placeholder="Contoh: Beras Premium 5kg" /></label>
+                  <label>Kategori<input value={productForm.category} onChange={e => setProductForm(f => ({...f, category: e.target.value}))} placeholder="Contoh: Sembako" /></label>
+                  <label>Harga<input type="number" min="1" value={productForm.price} onChange={e => setProductForm(f => ({...f, price: e.target.value}))} placeholder="72000" /></label>
+                  <label>Stok<input type="number" min="0" step="1" value={productForm.stock} onChange={e => setProductForm(f => ({...f, stock: e.target.value}))} placeholder="0" /></label>
+                  <label>SKU<input value={productForm.sku} onChange={e => setProductForm(f => ({...f, sku: e.target.value}))} placeholder="SKU-001" /></label>
+                  <label>Barcode <span>(opsional)</span><input value={productForm.barcode} onChange={e => setProductForm(f => ({...f, barcode: e.target.value}))} placeholder="89910001" /></label>
+                </div>
+                <button className="primary wide" onClick={saveProduct}>
+                  <Plus size={16} /> {productEditing ? "Simpan Perubahan" : "Simpan Produk"}
+                </button>
+              </section>
+
+              <section className="tablecard">
+                <div className="tabletools">
+                  <div className="search">
+                    <Search size={17} />
+                    <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cari nama, SKU, barcode..." />
+                  </div>
+                  <select value={category} onChange={e => setCategory(e.target.value)}>
+                    <option value="Semua">Semua kategori</option>
+                    {productCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+                <div className="producttable">
+                  <div className="tr th"><span>Produk</span><span>Kategori</span><span>Harga</span><span>Stok</span><span>Aksi</span></div>
+                  {filtered.length ? filtered.map(p => (
+                    <div className="tr" key={p.id}>
+                      <div><b>{p.name}</b><small>SKU: {p.sku}{p.barcode ? ` • ${p.barcode}` : ""}</small></div>
+                      <span>{p.category}</span>
+                      <span>{money(p.price)}</span>
+                      <span>{p.stock}</span>
+                      <div className="actions">
+                        <button className="secondary small" onClick={() => editProduct(p)}>Edit</button>
+                        <button className="danger small" onClick={() => deleteProduct(p.id)}>Hapus</button>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="empty"><Package size={28} /><b>Produk tidak ditemukan</b><span>Tambahkan produk baru atau ubah pencarian.</span></div>
+                  )}
+                </div>
+              </section>
+            </div>
           </div>
         ) : (
           <Dashboard name={active} products={products} />
