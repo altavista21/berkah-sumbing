@@ -727,8 +727,14 @@ export default function Page() {
 
       <section className="workspace">
         <header className="topbar">
-          <button className="hamb" onClick={() => setMenu(true)}>
-            <Menu />
+          <button
+            className="hamb"
+            type="button"
+            aria-label={menu ? "Tutup menu" : "Buka menu"}
+            aria-expanded={menu}
+            onClick={() => setMenu(v => !v)}
+          >
+            {menu ? <X size={21} /> : <Menu size={21} />}
           </button>
           <div className="crumb">
             {active}
