@@ -167,18 +167,26 @@ export default function Page() {
 
       // Migrasi otomatis demo worker lama Budi/Rina menjadi Andi/Yunita.
       // Data pekerja buatan pengguna tidak disentuh.
-      if (savedWorkers) {
+      if (!savedWorkers) {
+        nextWorkers = demoWorkers;
+        localStorage.setItem("berkah-sumbing-workers", JSON.stringify(demoWorkers));
+      } else {
         try {
           const parsedWorkers = JSON.parse(savedWorkers);
+          const isEmptyWorkers = Array.isArray(parsedWorkers) && parsedWorkers.length === 0;
           const isOldDemoWorkers = Array.isArray(parsedWorkers) &&
             parsedWorkers.length === 2 &&
             parsedWorkers.some(w => w.id === "demo-worker-1" && w.name === "Budi Santoso") &&
             parsedWorkers.some(w => w.id === "demo-worker-2" && w.name === "Rina Lestari");
 
-          if (isOldDemoWorkers) {
+          if (isEmptyWorkers || isOldDemoWorkers) {
             nextWorkers = demoWorkers;
             localStorage.setItem("berkah-sumbing-workers", JSON.stringify(demoWorkers));
           }
+        } catch {
+          // Jangan menimpa data jika storage pekerja rusak.
+        }
+      }
         } catch {
           // Jangan menimpa data jika storage pekerja rusak.
         }
