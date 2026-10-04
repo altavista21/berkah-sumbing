@@ -36,6 +36,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [openingCash, setOpeningCash] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [recoveryUserId, setRecoveryUserId] = useState("");
+  const [recoveryApproverId, setRecoveryApproverId] = useState("");
+  const [recoveryApproverPin, setRecoveryApproverPin] = useState("");
+  const [recoveryNewPin, setRecoveryNewPin] = useState("");
+  const [recoveryConfirmPin, setRecoveryConfirmPin] = useState("");
 
   useEffect(() => {
     try {
@@ -144,6 +150,48 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetForgottenPin = async () => {
+    const target = users.find(u => u.id === recoveryUserId);
+    const approver = users.find(u => u.id === recoveryApproverId);
+    if (!target || !approver || !/^[^]$/.test("")) return;
+    if (approver.id === target.id) {
+      setNotice("Akun yang lupa PIN tidak dapat menjadi pemberi persetujuan.");
+      return;
+    }
+    if (approver.role !== "Kepala Cabang" && approver.role !== "Manajemen Pusat") {
+      setNotice("Reset PIN harus disetujui Kepala Cabang atau Manajemen Pusat.");
+      return;
+    }
+    if (!/^\\d{4,6}$/.test(recoveryApproverPin) || !/^\\d{4,6}$/.test(recoveryNewPin)) {
+      setNotice("PIN persetujuan dan PIN baru harus 4–6 digit.");
+      return;
+    }
+    if (recoveryNewPin !== recoveryConfirmPin) {
+      setNotice("Konfirmasi PIN baru tidak sama.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if ((await hashPin(recoveryApproverPin)) !== approver.pinHash) {
+        setNotice("PIN persetujuan salah.");
+        return;
+      }
+      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: await hashPin(recoveryNewPin) } : u);
+      saveUsers(nextUsers);
+      setUsers(nextUsers);
+      setRecoveryApproverPin("");
+      setRecoveryNewPin("");
+      setRecoveryConfirmPin("");
+      setRecoveryApproverId("");
+      setForgotOpen(false);
+      setNotice("PIN berhasil direset. Silakan login dengan PIN baru.");
+    } catch {
+      setNotice("Reset PIN gagal.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const openShift = () => {
     const cash = Number(openingCash);
     if (!Number.isFinite(cash) || cash < 0) {
@@ -233,7 +281,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   return (
     <main className="authpage">
       <section className="authcard">
-        <div className="authbrand"><div className="authlogo">BS</div><div><b>Berkah Sumbing</b><small>Point of Sale • Lokal</small></div></div>
+        <div className="authbrand"><div className="authlogo">BS</div><div><b>Berkah Sumbing</b><small>Point of Sale</small></div></div>
 
         {mode === "setup" && (
           <>
@@ -251,10 +299,18 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           <>
             <div className="authtitle"><h1>Masuk ke POS</h1><p>Pilih pengguna yang terdaftar lalu masukkan PIN.</p></div>
             <label>Pengguna<select value={selectedUserId} onChange={e => { setSelectedUserId(e.target.value); setProfile(users.find(u => u.id === e.target.value) ?? null); }}>
-              {users.map(user => <option key={user.id} value={user.id}>{user.name} • {user.role}</option>)}
+              <optgroup label="Kasir">
+                {users.filter(user => user.role === "Kasir").map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+              </optgroup>
+              <optgroup label="Kepala Cabang">
+                {users.filter(user => user.role === "Kepala Cabang").map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+              </optgroup>
+              <optgroup label="Manajemen Pusat">
+                {users.filter(user => user.role === "Manajemen Pusat").map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+              </optgroup>
             </select></label>
             {profile && <div className="rolepill">{profile.role}</div>}
-            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
+            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>\n            <button className="authlink" type="button" onClick={() => { setRecoveryUserId(selectedUserId); setRecoveryApproverId(""); setRecoveryApproverPin(""); setRecoveryNewPin(""); setRecoveryConfirmPin(""); setNotice(""); setForgotOpen(true); }}>Lupa PIN?</button>
             <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
             <button className="authsecondary" onClick={() => { setMode("signup"); setNotice(""); setPin(""); setPinConfirm(""); setName(""); }}><UserPlus size={16}/> Daftar pengguna baru</button>
           </>
@@ -280,6 +336,32 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             <button className="authprimary" onClick={openShift}><Wallet size={17}/> Buka Shift</button>
           </>
         )}
+
+        {forgotOpen && (
+          <div className="authmodalbackdrop" onClick={() => setForgotOpen(false)}>
+            <div className="authmodal" onClick={e => e.stopPropagation()}>
+              <div className="authtitle"><h2>Reset PIN</h2><p>Reset PIN harus disetujui Kepala Cabang atau Manajemen Pusat.</p></div>
+              <label>Akun
+                <select value={recoveryUserId} onChange={e => setRecoveryUserId(e.target.value)}>
+                  {users.map(user => <option key={user.id} value={user.id}>{user.name} • {user.role}</option>)}
+                </select>
+              </label>
+              <label>Pemberi persetujuan
+                <select value={recoveryApproverId} onChange={e => setRecoveryApproverId(e.target.value)}>
+                  <option value="">Pilih Kepala Cabang / Manajemen Pusat</option>
+                  {users.filter(user => user.role === "Kepala Cabang" || user.role === "Manajemen Pusat").map(user => <option key={user.id} value={user.id}>{user.name} • {user.role}</option>)}
+                </select>
+              </label>
+              <label>PIN pemberi persetujuan<input inputMode="numeric" type="password" maxLength={6} value={recoveryApproverPin} onChange={e => setRecoveryApproverPin(e.target.value.replace(/\D/g, ""))} /></label>
+              <label>PIN baru<input inputMode="numeric" type="password" maxLength={6} value={recoveryNewPin} onChange={e => setRecoveryNewPin(e.target.value.replace(/\D/g, ""))} /></label>
+              <label>Konfirmasi PIN baru<input inputMode="numeric" type="password" maxLength={6} value={recoveryConfirmPin} onChange={e => setRecoveryConfirmPin(e.target.value.replace(/\D/g, ""))} /></label>
+              <div className="authmodalactions">
+                <button className="authsecondary" type="button" onClick={() => setForgotOpen(false)}>Batal</button>
+                <button className="authprimary" type="button" onClick={resetForgottenPin} disabled={busy}><ShieldCheck size={16}/> Reset PIN</button>
+              </div>
+            </div>
+          </div>
+        )} 
 
         {notice && <div className="authnotice">{notice}</div>}
         <small className="authfoot">Mode lokal: akun, PIN, dan shift tersimpan hanya di perangkat ini.</small>
