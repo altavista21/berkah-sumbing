@@ -79,6 +79,7 @@ export default function Page() {
   const [memberQuery, setMemberQuery] = useState("");
   const [payment, setPayment] = useState("Tunai");
   const [cash, setCash] = useState("");
+  const [paymentRef, setPaymentRef] = useState("");
   const [notice, setNotice] = useState("");
   const [menu, setMenu] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -250,9 +251,14 @@ export default function Page() {
         return;
       }
       if (member.points < total) {
-        setNotice("Poin member tidak mencukupi");
+        setNotice(`Poin member tidak mencukupi. Saldo: ${member.points.toLocaleString("id-ID")} poin.`);
         return;
       }
+    }
+
+    if ((payment === "QRIS" || payment === "Transfer") && !paymentRef.trim()) {
+      setNotice(`Masukkan nomor referensi ${payment} atau konfirmasi pembayaran terlebih dahulu.`);
+      return;
     }
 
     setProcessing(true);
@@ -299,6 +305,7 @@ export default function Page() {
         total,
         payment_method: payment,
         payment: payment,
+        payment_reference: paymentRef.trim() || null,
         member_id: member?.id ?? null
       };
 
@@ -359,6 +366,7 @@ export default function Page() {
 
       setCart([]);
       setCash("");
+      setPaymentRef("");
       setMember(null);
       setMemberQuery("");
       setPayment("Tunai");
@@ -835,19 +843,43 @@ export default function Page() {
                 </div>
 
                 {payment === "Tunai" && (
-                  <input
-                    className="cash"
-                    type="number"
-                    min="0"
-                    value={cash}
-                    onChange={e => setCash(e.target.value)}
-                    placeholder="Nominal uang diterima"
-                  />
+                  <>
+                    <input
+                      className="cash"
+                      type="number"
+                      min="0"
+                      value={cash}
+                      onChange={e => setCash(e.target.value)}
+                      placeholder="Nominal uang diterima"
+                    />
+                    {Number(cash) > total && (
+                      <div className="change">
+                        Kembalian <b>{money(Number(cash) - total)}</b>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {payment === "Tunai" && Number(cash) > total && (
-                  <div className="change">
-                    Kembalian <b>{money(Number(cash) - total)}</b>
+                {(payment === "QRIS" || payment === "Transfer") && (
+                  <div className="paymentextra">
+                    <div className="paymenthint">
+                      {payment === "QRIS"
+                        ? "QRIS belum terhubung ke payment gateway. Konfirmasi pembayaran pelanggan secara manual."
+                        : "Transfer bank dicatat setelah pembayaran pelanggan dikonfirmasi."}
+                    </div>
+                    <input
+                      className="cash"
+                      value={paymentRef}
+                      onChange={e => setPaymentRef(e.target.value)}
+                      placeholder={`Nomor referensi ${payment}`}
+                      autoComplete="off"
+                    />
+                  </div>
+                )}
+
+                {payment === "Poin" && member && (
+                  <div className="paymenthint">
+                    Saldo poin: <b>{member.points.toLocaleString("id-ID")} poin</b> • kebutuhan: <b>{total.toLocaleString("id-ID")} poin</b>
                   </div>
                 )}
               </div>
@@ -1146,9 +1178,9 @@ function Reports({ sales, products }: { sales: any[]; products: Product[] }) {
   const methods=["Tunai","QRIS","Transfer","Poin"];
   return <div className="dashboard"><div className="head"><div><h1>Laporan</h1><p>Ringkasan transaksi lokal.</p></div></div>
     <div className="stockstats"><div className="statcard"><span>Total Transaksi</span><b>{sales.length}</b></div><div className="statcard"><span>Total Penjualan</span><b>{money(total)}</b></div><div className="statcard"><span>Rata-rata</span><b>{money(sales.length?total/sales.length:0)}</b></div></div>
-    <div className="stockgrid"><section className="tablecard"><div className="formtitle"><div><b>Pembayaran</b><small>Nilai per metode.</small></div></div><div className="stocklist">{methods.map(m=><div className="stockrow" key={m}><b>{m}</b><strong>{money(sales.filter(x=>x.payment===m).reduce((s,x)=>s+Number(x.total||0),0))}</strong></div>)}</div></section>
+    <div className="stockgrid"><section className="tablecard"><div className="formtitle"><div><b>Pembayaran</b><small>Nilai per metode.</small></div></div><div className="stocklist">{methods.map(m=><div className="stockrow" key={m}><b>{m}</b><strong>{money(sales.filter(x=>(x.payment_method ?? x.payment)===m).reduce((s,x)=>s+Number(x.total||0),0))}</strong></div>)}</div></section>
     <section className="tablecard"><div className="formtitle"><div><b>Inventori</b><small>Ringkasan stok.</small></div></div><div className="stocklist"><div className="stockrow"><b>Produk</b><strong>{products.length}</strong></div><div className="stockrow"><b>Menipis</b><strong>{products.filter(p=>p.stock<=10).length}</strong></div><div className="stockrow"><b>Habis</b><strong>{products.filter(p=>p.stock<=0).length}</strong></div></div></section></div>
-    <section className="tablecard"><div className="formtitle"><div><b>Transaksi Terbaru</b><small>10 transaksi terakhir.</small></div></div><div className="producttable"><div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span></span></div>{sales.slice(0,10).map(x=><div className="tr" key={x.id}><span>{x.invoice||x.id}</span><span>{x.createdAt?new Date(x.createdAt).toLocaleString("id-ID"):"-"}</span><span>{x.payment||"-"}</span><b>{money(Number(x.total||0))}</b><span/></div>)}{!sales.length&&<div className="empty"><Receipt size={28}/><b>Belum ada transaksi</b><span>Transaksi Kasir akan muncul di sini.</span></div>}</div></section>
+    <section className="tablecard"><div className="formtitle"><div><b>Transaksi Terbaru</b><small>10 transaksi terakhir.</small></div></div><div className="producttable"><div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span></span></div>{sales.slice(0,10).map(x=><div className="tr" key={x.id}><span>{x.invoice_no||x.invoice||x.id}</span><span>{(x.created_at ?? x.createdAt)?new Date(x.created_at ?? x.createdAt).toLocaleString("id-ID"):"-"}</span><span>{(x.payment_method ?? x.payment)||"-"}</span><b>{money(Number(x.total||0))}</b><span/></div>)}{!sales.length&&<div className="empty"><Receipt size={28}/><b>Belum ada transaksi</b><span>Transaksi Kasir akan muncul di sini.</span></div>}</div></section>
   </div>;
 }
 
