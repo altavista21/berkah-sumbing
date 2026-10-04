@@ -746,7 +746,6 @@ export default function Page() {
           </button>
           <div className="crumb">
             {active}
-            <ChevronDown size={14} />
           </div>
           <div className="topright">
             <span className="shift">
