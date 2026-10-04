@@ -205,6 +205,16 @@ export default function Page() {
         }
       }
 
+      const latestMembers = readLocal<Member[]>("berkah-sumbing-members", members);
+      const currentMember = member
+        ? latestMembers.find(m => m.id === member.id)
+        : null;
+
+      if (member && (!currentMember || currentMember.points < (payment === "Poin" ? total : 0))) {
+        setNotice("Data member berubah. Silakan cari member lagi.");
+        return;
+      }
+
       const invoiceNo =
         "BS-" +
         new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
@@ -245,14 +255,6 @@ export default function Page() {
       );
 
       if (member) {
-        const latestMembers = readLocal<Member[]>("berkah-sumbing-members", members);
-        const currentMember = latestMembers.find(m => m.id === member.id);
-
-        if (!currentMember) {
-          setNotice("Member sudah tidak tersedia. Silakan cari member lagi.");
-          return;
-        }
-
         const pointsEarned = Math.floor(total / 10000);
         const pointsUsed = payment === "Poin" ? total : 0;
 
