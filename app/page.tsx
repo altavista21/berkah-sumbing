@@ -25,6 +25,17 @@ type Member = {
   tier: "Bronze" | "Silver" | "Gold";
   points: number;
 };
+type Worker = {
+  id: string;
+  name: string;
+  gender: "Karyawan" | "Karyawati";
+  position: string;
+  phone: string;
+  monthlySalary: number;
+  workStart: string;
+  workEnd: string;
+  status: "Aktif" | "Resign";
+};
 
 const demoProducts: Product[] = [
   { id: "demo-1", name: "Beras Premium 5kg", category: "Sembako", price: 72000, stock: 38, sku: "89910001" },
@@ -76,6 +87,7 @@ export default function Page() {
   const [category, setCategory] = useState("Semua");
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [member, setMember] = useState<Member | null>(null);
@@ -101,10 +113,12 @@ export default function Page() {
   const [stockForm, setStockForm] = useState({ productId: "", type: "Masuk", qty: "", note: "" });
   const [memberForm, setMemberForm] = useState({ id: "", name: "", phone: "", tier: "Bronze", points: "0" });
   const [memberEditing, setMemberEditing] = useState(false);
+  const [workerForm, setWorkerForm] = useState({ id:"", name:"", gender:"Karyawan", position:"", phone:"", monthlySalary:"", workStart:"08:00", workEnd:"17:00", status:"Aktif" });
+  const [workerEditing, setWorkerEditing] = useState(false);
   const allowedNav = useMemo(() => {
     if (profile?.role === "Kasir") return ["Kasir", "Riwayat"];
-    if (profile?.role === "Kepala Cabang") return ["Dashboard", "Riwayat", "Produk", "Stok", "Member", "Laporan", "Pengaturan"];
-    if (profile?.role === "Manajemen Pusat") return ["Dashboard", "Laporan", "Pengaturan"];
+    if (profile?.role === "Kepala Cabang") return ["Dashboard", "Riwayat", "Produk", "Stok", "Member", "Pekerja", "Laporan", "Pengaturan"];
+    if (profile?.role === "Manajemen Pusat") return ["Dashboard", "Pekerja", "Laporan", "Pengaturan"];
     return [];
   }, [profile?.role]);
 
@@ -119,13 +133,15 @@ export default function Page() {
     try {
       const savedProducts = localStorage.getItem("berkah-sumbing-products");
       const savedMembers = localStorage.getItem("berkah-sumbing-members");
+      const savedWorkers = localStorage.getItem("berkah-sumbing-workers");
       const savedSales = readLocal<any[]>("berkah-sumbing-sales", []);
 
       const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
       const nextMembers = readLocal<Member[]>("berkah-sumbing-members", demoMembers);
-
+      const nextWorkers = readLocal<Worker[]>("berkah-sumbing-workers", []);
       setProducts(nextProducts);
       setMembers(nextMembers);
+      setWorkers(nextWorkers);
       setSales(savedSales);
 
       if (!savedProducts) {
@@ -134,6 +150,7 @@ export default function Page() {
       if (!savedMembers) {
         localStorage.setItem("berkah-sumbing-members", JSON.stringify(demoMembers));
       }
+      if (!savedWorkers) localStorage.setItem("berkah-sumbing-workers", JSON.stringify([]));
 
       setNotice("Mode lokal aktif. Data tersimpan di perangkat ini.");
     } catch {
@@ -474,6 +491,7 @@ export default function Page() {
       exportedAt: new Date().toISOString(),
       products: readLocal<Product[]>("berkah-sumbing-products", products),
       members: readLocal<Member[]>("berkah-sumbing-members", members),
+      workers: readLocal<Worker[]>("berkah-sumbing-workers", workers),
       sales: readLocal<any[]>("berkah-sumbing-sales", sales),
       stockMovements: readLocal<any[]>("berkah-sumbing-stock-movements", [])
     };
@@ -498,9 +516,10 @@ export default function Page() {
         if (!window.confirm("Restore backup akan mengganti data lokal saat ini. Lanjutkan?")) return;
         localStorage.setItem("berkah-sumbing-products", JSON.stringify(data.products));
         localStorage.setItem("berkah-sumbing-members", JSON.stringify(data.members));
+        localStorage.setItem("berkah-sumbing-workers", JSON.stringify(Array.isArray(data.workers)?data.workers:[]));
         localStorage.setItem("berkah-sumbing-sales", JSON.stringify(data.sales));
         localStorage.setItem("berkah-sumbing-stock-movements", JSON.stringify(Array.isArray(data.stockMovements) ? data.stockMovements : []));
-        setProducts(data.products); setMembers(data.members); setSales(data.sales);
+        setProducts(data.products); setMembers(data.members); setWorkers(Array.isArray(data.workers)?data.workers:[]); setSales(data.sales);
         setNotice("Backup berhasil dipulihkan.");
       } catch { setNotice("File backup tidak valid."); }
       event.target.value = "";
@@ -630,6 +649,22 @@ export default function Page() {
     localStorage.setItem("berkah-sumbing-members", JSON.stringify(next)); setMembers(next);
     if (memberForm.id === id) resetMemberForm(); setNotice("Member berhasil dihapus.");
   };
+  const resetWorkerForm = () => {
+    setWorkerForm({id:"",name:"",gender:"Karyawan",position:"",phone:"",monthlySalary:"",workStart:"08:00",workEnd:"17:00",status:"Aktif"});
+    setWorkerEditing(false);
+  };
+  const saveWorker = () => {
+    const name=workerForm.name.trim(), position=workerForm.position.trim(), salary=Number(workerForm.monthlySalary);
+    if(!name || !position || !Number.isFinite(salary) || salary<0 || !workerForm.workStart || !workerForm.workEnd){setNotice("Lengkapi nama, jabatan, jam kerja, dan gaji bulanan dengan benar.");return;}
+    const latest=readLocal<Worker[]>("berkah-sumbing-workers",workers);
+    const worker:Worker={id:workerForm.id||crypto.randomUUID(),name,gender:workerForm.gender as Worker["gender"],position,phone:workerForm.phone.trim(),monthlySalary:salary,workStart:workerForm.workStart,workEnd:workerForm.workEnd,status:workerForm.status as Worker["status"]};
+    const next=workerForm.id?latest.map(w=>w.id===workerForm.id?worker:w):[worker,...latest];
+    localStorage.setItem("berkah-sumbing-workers",JSON.stringify(next));setWorkers(next);resetWorkerForm();
+    setNotice(workerForm.id?"Data pekerja berhasil diperbarui.":"Pekerja berhasil ditambahkan.");
+  };
+  const editWorker=(w:Worker)=>{setWorkerForm({id:w.id,name:w.name,gender:w.gender,position:w.position,phone:w.phone,monthlySalary:String(w.monthlySalary),workStart:w.workStart,workEnd:w.workEnd,status:w.status});setWorkerEditing(true);};
+  const resignWorker=(id:string)=>{const w=workers.find(x=>x.id===id);if(!w||!window.confirm(`Tandai ${w.name} sebagai Resign?`))return;const next=readLocal<Worker[]>("berkah-sumbing-workers",workers).map(x=>x.id===id?{...x,status:"Resign" as const}:x);localStorage.setItem("berkah-sumbing-workers",JSON.stringify(next));setWorkers(next);};
+  const deleteResignedWorker=(id:string)=>{const w=workers.find(x=>x.id===id);if(!w||w.status!=="Resign"||!window.confirm(`Hapus data pekerja "${w.name}"?`))return;const next=readLocal<Worker[]>("berkah-sumbing-workers",workers).filter(x=>x.id!==id);localStorage.setItem("berkah-sumbing-workers",JSON.stringify(next));setWorkers(next);setNotice("Data pekerja yang resign berhasil dihapus.");};
   const filteredMembers = members.filter(m => [m.name,m.phone,m.tier].join(" ").toLowerCase().includes(memberQuery.toLowerCase()));
 
   const saveStockMovement = () => {
@@ -1160,6 +1195,8 @@ export default function Page() {
               </section>
             </div>
           </div>
+        ) : active === "Pekerja" ? (
+          <Workers workers={workers} form={workerForm} setForm={setWorkerForm} editing={workerEditing} onNew={resetWorkerForm} onSave={saveWorker} onEdit={editWorker} onResign={resignWorker} onDelete={deleteResignedWorker}/>
         ) : active === "Riwayat" ? (
           <History sales={sales} products={products} members={members} setSales={setSales} setProducts={setProducts} setMembers={setMembers} />
         ) : active === "Laporan" ? (
@@ -1221,6 +1258,27 @@ export default function Page() {
       )}
     </main>
   );
+}
+
+function Workers({workers,form,setForm,editing,onNew,onSave,onEdit,onResign,onDelete}:{workers:Worker[];form:any;setForm:any;editing:boolean;onNew:()=>void;onSave:()=>void;onEdit:(w:Worker)=>void;onResign:(id:string)=>void;onDelete:(id:string)=>void}){
+return <div className="dashboard">
+<div className="head"><div><h1>Pekerja</h1><p>Kelola karyawan dan karyawati, jam kerja, status, dan gaji bulanan.</p></div><button className="primary" onClick={onNew}><Plus size={16}/> Pekerja Baru</button></div>
+<div className="workerstats"><div className="statcard"><span>Pekerja Aktif</span><b>{workers.filter(w=>w.status==="Aktif").length}</b><small>sedang bekerja</small></div><div className="statcard"><span>Resign</span><b>{workers.filter(w=>w.status==="Resign").length}</b><small>belum dihapus</small></div><div className="statcard"><span>Total Gaji / Bulan</span><b>{money(workers.filter(w=>w.status==="Aktif").reduce((s,w)=>s+w.monthlySalary,0))}</b><small>pekerja aktif</small></div></div>
+<section className="formcard"><div className="formtitle"><div><b>{editing?"Edit Pekerja":"Tambah Pekerja"}</b><small>Data tersimpan lokal di perangkat ini.</small></div>{editing&&<button className="clear" onClick={onNew}>Batal</button>}</div>
+<div className="formgrid">
+<label>Nama Lengkap<input value={form.name} onChange={e=>setForm((f:any)=>({...f,name:e.target.value}))} placeholder="Nama karyawan/karyawati"/></label>
+<label>Jenis<select value={form.gender} onChange={e=>setForm((f:any)=>({...f,gender:e.target.value}))}><option>Karyawan</option><option>Karyawati</option></select></label>
+<label>Jabatan<input value={form.position} onChange={e=>setForm((f:any)=>({...f,position:e.target.value}))} placeholder="Kasir, pramuniaga, kepala toko"/></label>
+<label>No. HP <span>(opsional)</span><input value={form.phone} onChange={e=>setForm((f:any)=>({...f,phone:e.target.value}))} placeholder="08xxxxxxxxxx"/></label>
+<label>Gaji per Bulan<input type="number" min="0" step="1000" value={form.monthlySalary} onChange={e=>setForm((f:any)=>({...f,monthlySalary:e.target.value}))} placeholder="3000000"/></label>
+<label>Jam Masuk<input type="time" value={form.workStart} onChange={e=>setForm((f:any)=>({...f,workStart:e.target.value}))}/></label>
+<label>Jam Pulang<input type="time" value={form.workEnd} onChange={e=>setForm((f:any)=>({...f,workEnd:e.target.value}))}/></label>
+<label>Status<select value={form.status} onChange={e=>setForm((f:any)=>({...f,status:e.target.value}))}><option>Aktif</option><option>Resign</option></select></label>
+</div><button className="primary wide" onClick={onSave}><Users size={16}/>{editing?"Simpan Perubahan":"Simpan Pekerja"}</button></section>
+<section className="tablecard"><div className="formtitle"><div><b>Daftar Pekerja</b><small>Hanya data resign yang dapat dihapus.</small></div></div>
+<div className="producttable worker-table"><div className="tr th"><span>Nama</span><span>Jabatan</span><span>Jam Kerja</span><span>Gaji / Bulan</span><span>Status / Aksi</span></div>
+{workers.map(w=><div className="tr" key={w.id}><div><b>{w.name}</b><small>{w.gender}{w.phone?` • ${w.phone}`:""}</small></div><span>{w.position}</span><span>{w.workStart} - {w.workEnd}</span><span>{money(w.monthlySalary)}</span><div className="actions">{w.status==="Aktif"?<button className="danger small" onClick={()=>onResign(w.id)}>Resign</button>:<button className="danger small" onClick={()=>onDelete(w.id)}>Hapus</button>}<button className="secondary small" onClick={()=>onEdit(w)}>Edit</button></div></div>)}
+{!workers.length&&<div className="empty"><Users size={28}/><b>Belum ada pekerja</b><span>Tambahkan karyawan atau karyawati.</span></div>}</div></section></div>;
 }
 
 function History({
