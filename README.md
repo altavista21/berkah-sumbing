@@ -8,6 +8,7 @@ Aplikasi Point of Sale (POS) lokal untuk Berkah Sumbing.
 - Next.js App Router + TypeScript + responsive POS UI.
 - Dashboard dasar.
 - Modul Kasir: katalog, pencarian, kategori, keranjang, quantity, member, diskon tier, Tunai/QRIS/Transfer/Poin.
+- Riwayat transaksi: pencarian, detail transaksi, dan refund penuh dengan pengembalian stok/poin.
 - Checkout lokal dengan validasi stok dan validasi member terbaru.
 - Modul Produk: tambah, edit, hapus, pencarian, kategori, SKU, barcode.
 - Modul Stok: stok masuk, stok keluar, validasi stok, catatan, dan riwayat pergerakan stok.
@@ -43,7 +44,7 @@ Aturan tersebut masih bersifat konfigurasi/prototipe dan perlu dikonfirmasi sebe
 - Printer thermal Bluetooth/USB.
 - Struk atau notifikasi WhatsApp.
 - Barcode/QR scanner perangkat secara native.
-- Refund/void dan pembatalan transaksi.
+- Void/pembatalan sebagian transaksi dan alur approval refund yang lebih lengkap.
 - Laporan laba-rugi dan analitik produk/member yang lebih lengkap.
 - Integrasi pembayaran online.
 - Database/cloud untuk sinkronisasi antar perangkat.
