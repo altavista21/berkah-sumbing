@@ -133,8 +133,9 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     const attempts = pinAttempts[selected.id] ?? 0;
     if (attempts >= 5) {
       setNotice("PIN dikunci setelah 5 kali salah. Gunakan Lupa PIN untuk membuat PIN baru.");
-      setForgotOpen(true);
       setRecoveryUserId(selected.id);
+      setRecoveryApproverId("");
+      setForgotOpen(true);
       return;
     }
     setBusy(true);
@@ -148,8 +149,9 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         setPin("");
         if (nextAttempts >= 5) {
           setNotice("PIN salah 5 kali. Akun dikunci, gunakan Lupa PIN untuk membuat PIN baru.");
-          setForgotOpen(true);
           setRecoveryUserId(selected.id);
+          setRecoveryApproverId("");
+          setForgotOpen(true);
         } else {
           setNotice("PIN salah. Percobaan " + nextAttempts + " dari 5.");
         }
@@ -215,11 +217,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       const newPinHash = await hashPin(recoveryNewPin);
       const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);
       saveUsers(nextUsers);
+      setUsers(nextUsers);
       const nextAttempts = { ...pinAttempts };
       delete nextAttempts[target.id];
       setPinAttempts(nextAttempts);
       localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextAttempts));
-      setUsers(nextUsers);
       setRecoveryApproverPin("");
       setRecoveryNewPin("");
       setRecoveryConfirmPin("");
@@ -277,16 +279,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       .reduce((sum, s) => sum + Number(s.total || 0), 0);
     const expectedCash = shift.openingCash + cashSales;
     const input = window.prompt(
-      "Kas akhir fisik saat menutup shift.
-
-" +
-      "Modal awal: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash) + "
-" +
-      "Penjualan tunai: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(cashSales) + "
-" +
-      "Kas seharusnya: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(expectedCash) + "
-
-Masukkan kas akhir:",
+      "Kas akhir fisik saat menutup shift.\n\n" +
+      "Modal awal: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash) + "\n" +
+      "Penjualan tunai: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(cashSales) + "\n" +
+      "Kas seharusnya: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(expectedCash) + "\n\nMasukkan kas akhir:",
       String(expectedCash)
     );
     if (input === null) return;
