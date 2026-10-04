@@ -1,1 +1,12 @@
-import "./globals.css"; import type {Metadata} from "next"; export const metadata:Metadata={title:"Berkah Sumbing POS",description:"POS multi-cabang dan membership Berkah Sumbing"}; export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="id"><body>{children}</body></html>}
+import "./globals.css";
+import type { Metadata } from "next";
+import AuthGate from "./AuthGate";
+
+export const metadata: Metadata = {
+  title: "Berkah Sumbing POS",
+  description: "POS multi-cabang dan membership Berkah Sumbing"
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return <html lang="id"><body><AuthGate>{children}</AuthGate></body></html>;
+}
