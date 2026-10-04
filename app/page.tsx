@@ -702,13 +702,17 @@ export default function Page() {
     setWorkerEditing(false);
   };
   const saveWorker = () => {
+    if (!workerForm.id) {
+      setNotice("Pekerja baru didaftarkan melalui halaman login.");
+      return;
+    }
     const name=workerForm.name.trim(), position=workerForm.position.trim(), salary=Number(workerForm.monthlySalary);
     if(!name || !position || !Number.isFinite(salary) || salary<0 || !workerForm.workStart || !workerForm.workEnd){setNotice("Lengkapi nama, jabatan, jam kerja, dan gaji bulanan dengan benar.");return;}
     const latest=readLocal<Worker[]>("berkah-sumbing-workers",workers);
-    const worker:Worker={id:workerForm.id||crypto.randomUUID(),name,gender:workerForm.gender as Worker["gender"],position,phone:workerForm.phone.trim(),monthlySalary:salary,workStart:workerForm.workStart,workEnd:workerForm.workEnd,status:workerForm.status as Worker["status"]};
-    const next=workerForm.id?latest.map(w=>w.id===workerForm.id?worker:w):[worker,...latest];
+    const worker:Worker={id:workerForm.id,name,gender:workerForm.gender as Worker["gender"],position,phone:workerForm.phone.trim(),monthlySalary:salary,workStart:workerForm.workStart,workEnd:workerForm.workEnd,status:workerForm.status as Worker["status"]};
+    const next=latest.map(w=>w.id===workerForm.id?worker:w);
     localStorage.setItem("berkah-sumbing-workers",JSON.stringify(next));setWorkers(next);resetWorkerForm();
-    setNotice(workerForm.id?"Data pekerja berhasil diperbarui.":"Pekerja berhasil ditambahkan.");
+    setNotice("Data pekerja berhasil diperbarui.");
   };
   const editWorker=(w:Worker)=>{setWorkerForm({id:w.id,name:w.name,gender:w.gender,position:w.position,phone:w.phone,monthlySalary:String(w.monthlySalary),workStart:w.workStart,workEnd:w.workEnd,status:w.status});setWorkerEditing(true);};
   const resignWorker=(id:string)=>{const w=workers.find(x=>x.id===id);if(!w||!window.confirm(`Tandai ${w.name} sebagai Resign?`))return;const next=readLocal<Worker[]>("berkah-sumbing-workers",workers).map(x=>x.id===id?{...x,status:"Resign" as const}:x);localStorage.setItem("berkah-sumbing-workers",JSON.stringify(next));setWorkers(next);};
@@ -1244,7 +1248,7 @@ export default function Page() {
             </div>
           </div>
         ) : active === "Pekerja" ? (
-          <Workers workers={workers} form={workerForm} setForm={setWorkerForm} editing={workerEditing} onNew={resetWorkerForm} onSave={saveWorker} onEdit={editWorker} onResign={resignWorker} onDelete={deleteResignedWorker}/>
+          <Workers workers={workers} form={workerForm} setForm={setWorkerForm} editing={workerEditing} onCancel={resetWorkerForm} onSave={saveWorker} onEdit={editWorker} onResign={resignWorker} onDelete={deleteResignedWorker}/>
         ) : active === "Riwayat" ? (
           <History sales={sales} products={products} members={members} setSales={setSales} setProducts={setProducts} setMembers={setMembers} />
         ) : active === "Laporan" ? (
@@ -1308,11 +1312,11 @@ export default function Page() {
   );
 }
 
-function Workers({workers,form,setForm,editing,onNew,onSave,onEdit,onResign,onDelete}:{workers:Worker[];form:any;setForm:any;editing:boolean;onNew:()=>void;onSave:()=>void;onEdit:(w:Worker)=>void;onResign:(id:string)=>void;onDelete:(id:string)=>void}){
+function Workers({workers,form,setForm,editing,onCancel,onSave,onEdit,onResign,onDelete}:{workers:Worker[];form:any;setForm:any;editing:boolean;onCancel:()=>void;onSave:()=>void;onEdit:(w:Worker)=>void;onResign:(id:string)=>void;onDelete:(id:string)=>void}){
 return <div className="dashboard">
 <div className="head"><div><h1>Pekerja</h1><p>Kelola karyawan dan karyawati, jam kerja, status, dan gaji bulanan.</p></div></div>
 <div className="workerstats"><div className="statcard"><span>Pekerja Aktif</span><b>{workers.filter(w=>w.status==="Aktif").length}</b><small>sedang bekerja</small></div><div className="statcard"><span>Resign</span><b>{workers.filter(w=>w.status==="Resign").length}</b><small>belum dihapus</small></div><div className="statcard"><span>Total Gaji / Bulan</span><b>{money(workers.filter(w=>w.status==="Aktif").reduce((s,w)=>s+w.monthlySalary,0))}</b><small>pekerja aktif</small></div></div>
-<section className="formcard"><div className="formtitle"><div><b>{editing?"Edit Pekerja":"Tambah Pekerja"}</b><small>Data tersimpan lokal di perangkat ini.</small></div>{editing&&<button className="clear" onClick={onNew}>Batal</button>}</div>
+{editing&&<section className="formcard"><div className="formtitle"><div><b>Edit Pekerja</b><small>Data tersimpan lokal di perangkat ini.</small></div><button className="clear" onClick={onCancel}>Batal</button></div>
 <div className="formgrid">
 <label>Nama Lengkap<input value={form.name} onChange={e=>setForm((f:any)=>({...f,name:e.target.value}))} placeholder="Nama karyawan/karyawati"/></label>
 <label>Jenis<select value={form.gender} onChange={e=>setForm((f:any)=>({...f,gender:e.target.value}))}><option>Karyawan</option><option>Karyawati</option></select></label>
@@ -1322,11 +1326,11 @@ return <div className="dashboard">
 <label>Jam Masuk<input type="time" value={form.workStart} onChange={e=>setForm((f:any)=>({...f,workStart:e.target.value}))}/></label>
 <label>Jam Pulang<input type="time" value={form.workEnd} onChange={e=>setForm((f:any)=>({...f,workEnd:e.target.value}))}/></label>
 <label>Status<select value={form.status} onChange={e=>setForm((f:any)=>({...f,status:e.target.value}))}><option>Aktif</option><option>Resign</option></select></label>
-</div><button className="primary wide" onClick={onSave}><Users size={16}/>{editing?"Simpan Perubahan":"Simpan Pekerja"}</button></section>
+</div><button className="primary wide" onClick={onSave}><Users size={16}/>Simpan Perubahan</button></section>}
 <section className="tablecard"><div className="formtitle"><div><b>Daftar Pekerja</b><small>Hanya data resign yang dapat dihapus.</small></div></div>
 <div className="producttable worker-table"><div className="tr th"><span>Nama</span><span>Jabatan</span><span>Jam Kerja</span><span>Gaji / Bulan</span><span>Status / Aksi</span></div>
 {workers.map(w=><div className="tr" key={w.id}><div><b>{w.name}</b><small>{w.gender}{w.phone?` • ${w.phone}`:""}</small></div><span>{w.position}</span><span>{w.workStart} - {w.workEnd}</span><span>{money(w.monthlySalary)}</span><div className="actions">{w.status==="Aktif"?<button className="danger small" onClick={()=>onResign(w.id)}>Resign</button>:<button className="danger small" onClick={()=>onDelete(w.id)}>Hapus</button>}<button className="secondary small" onClick={()=>onEdit(w)}>Edit</button></div></div>)}
-{!workers.length&&<div className="empty"><Users size={28}/><b>Belum ada pekerja</b><span>Tambahkan karyawan atau karyawati.</span></div>}</div></section></div>;
+{!workers.length&&<div className="empty"><Users size={28}/><b>Belum ada pekerja</b><span>Pekerja yang didaftarkan dari halaman login akan muncul di sini.</span></div>}</div></section></div>;
 }
 
 function History({
