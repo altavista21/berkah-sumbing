@@ -48,6 +48,31 @@ const demoProducts: Product[] = [
   { id: "demo-8", name: "Mie Instan", category: "Sembako", price: 3500, stock: 120, sku: "89910008" }
 ];
 
+const demoWorkers: Worker[] = [
+  {
+    id: "demo-worker-1",
+    name: "Budi Santoso",
+    gender: "Karyawan",
+    position: "Pramuniaga",
+    phone: "081234567891",
+    monthlySalary: 3000000,
+    workStart: "08:00",
+    workEnd: "17:00",
+    status: "Aktif"
+  },
+  {
+    id: "demo-worker-2",
+    name: "Rina Lestari",
+    gender: "Karyawati",
+    position: "Kasir",
+    phone: "081234567892",
+    monthlySalary: 3000000,
+    workStart: "08:00",
+    workEnd: "17:00",
+    status: "Aktif"
+  }
+];
+
 const demoMembers: Member[] = [
   { id: "demo-member-1", name: "Andi Pratama", phone: "081234567890", tier: "Gold", points: 1240 },
   { id: "demo-member-2", name: "Siti Aminah", phone: "081298765432", tier: "Silver", points: 680 },
@@ -138,7 +163,7 @@ export default function Page() {
 
       const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
       const nextMembers = readLocal<Member[]>("berkah-sumbing-members", demoMembers);
-      const nextWorkers = readLocal<Worker[]>("berkah-sumbing-workers", []);
+      const nextWorkers = readLocal<Worker[]>("berkah-sumbing-workers", demoWorkers);
       setProducts(nextProducts);
       setMembers(nextMembers);
       setWorkers(nextWorkers);
@@ -150,7 +175,7 @@ export default function Page() {
       if (!savedMembers) {
         localStorage.setItem("berkah-sumbing-members", JSON.stringify(demoMembers));
       }
-      if (!savedWorkers) localStorage.setItem("berkah-sumbing-workers", JSON.stringify([]));
+      if (!savedWorkers) localStorage.setItem("berkah-sumbing-workers", JSON.stringify(demoWorkers));
 
       setNotice("Mode lokal aktif. Data tersimpan di perangkat ini.");
     } catch {
