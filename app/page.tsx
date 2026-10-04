@@ -59,7 +59,7 @@ const readLocal = <T,>(key: string, fallback: T): T => {
 };
 
 const nav = [
-  ["Kasir", ShoppingCart], ["Dashboard", LayoutDashboard], ["Produk", Package],
+  ["Kasir", ShoppingCart], ["Riwayat", Clock3], ["Dashboard", LayoutDashboard], ["Produk", Package],
   ["Stok", Boxes], ["Member", Users], ["Laporan", BarChart3], ["Pengaturan", Settings]
 ] as const;
 
@@ -933,6 +933,8 @@ export default function Page() {
               </section>
             </div>
           </div>
+        ) : active === "Riwayat" ? (
+          <History sales={sales} products={products} members={members} setSales={setSales} setProducts={setProducts} setMembers={setMembers} />
         ) : active === "Laporan" ? (
           <Reports sales={sales} products={products} />
         ) : active === "Pengaturan" ? (
@@ -957,6 +959,117 @@ export default function Page() {
       </section>
     </main>
   );
+}
+
+function History({
+  sales,
+  products,
+  members,
+  setSales,
+  setProducts,
+  setMembers
+}: {
+  sales: any[];
+  products: Product[];
+  members: Member[];
+  setSales: (sales: any[]) => void;
+  setProducts: (products: Product[]) => void;
+  setMembers: (members: Member[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<any | null>(null);
+  const filtered = sales.filter(x => {
+    const invoice = String(x.invoice_no ?? x.invoice ?? x.id ?? "").toLowerCase();
+    const member = String(x.member_id ?? "").toLowerCase();
+    return invoice.includes(query.toLowerCase()) || member.includes(query.toLowerCase());
+  });
+
+  const refund = (sale: any) => {
+    if (sale.refundedAt || sale.status === "refunded") {
+      return;
+    }
+    if (!window.confirm("Batalkan/refund transaksi ini? Stok akan dikembalikan dan transaksi ditandai refund.")) return;
+
+    try {
+      const latestSales = readLocal<any[]>("berkah-sumbing-sales", sales);
+      const currentSale = latestSales.find(x => x.id === sale.id);
+      if (!currentSale || currentSale.refundedAt || currentSale.status === "refunded") {
+        setSelected(null);
+        return;
+      }
+
+      const latestProducts = readLocal<Product[]>("berkah-sumbing-products", products);
+      const nextProducts = latestProducts.map(p => {
+        const item = (currentSale.items ?? []).find((i: any) => i.product_id === p.id);
+        return item ? { ...p, stock: p.stock + Number(item.qty || 0) } : p;
+      });
+      localStorage.setItem("berkah-sumbing-products", JSON.stringify(nextProducts));
+      setProducts(nextProducts);
+
+      const nextSales = latestSales.map(x => x.id === currentSale.id
+        ? { ...x, status: "refunded", refundedAt: new Date().toISOString() }
+        : x
+      );
+      localStorage.setItem("berkah-sumbing-sales", JSON.stringify(nextSales));
+      setSales(nextSales);
+
+      if (currentSale.member_id) {
+        const latestMembers = readLocal<Member[]>("berkah-sumbing-members", members);
+        const pointsEarned = Math.floor(Number(currentSale.total || 0) / 10000);
+        const pointsUsed = currentSale.payment_method === "Poin" || currentSale.payment === "Poin"
+          ? Number(currentSale.total || 0)
+          : 0;
+        const nextMembers = latestMembers.map(m => m.id === currentSale.member_id
+          ? { ...m, points: Math.max(0, m.points - pointsEarned + pointsUsed) }
+          : m
+        );
+        localStorage.setItem("berkah-sumbing-members", JSON.stringify(nextMembers));
+        setMembers(nextMembers);
+      }
+
+      setSelected(null);
+    } catch {
+      window.alert("Refund gagal disimpan. Data lokal tidak diubah sebagian.");
+    }
+  };
+
+  return <div className="dashboard">
+    <div className="head">
+      <div><h1>Riwayat Transaksi</h1><p>Lihat transaksi terakhir dan lakukan refund penuh bila diperlukan.</p></div>
+    </div>
+    <section className="tablecard">
+      <div className="tabletools">
+        <div className="search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari invoice atau ID member..."/></div>
+      </div>
+      <div className="producttable">
+        <div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span>Status</span></div>
+        {filtered.slice(0,100).map(x => {
+          const refunded = x.refundedAt || x.status === "refunded";
+          return <button key={x.id} className="tr historyrow" onClick={()=>setSelected(x)} style={{textAlign:"left",width:"100%"}}>
+            <span><b>{x.invoice_no ?? x.invoice ?? x.id}</b></span>
+            <span>{x.created_at || x.createdAt ? new Date(x.created_at ?? x.createdAt).toLocaleString("id-ID") : "-"}</span>
+            <span>{x.payment_method ?? x.payment ?? "-"}</span>
+            <b>{money(Number(x.total || 0))}</b>
+            <span className={refunded ? "stockout" : "stocklow"}>{refunded ? "Refund" : "Selesai"}</span>
+          </button>;
+        })}
+        {!filtered.length && <div className="empty"><Clock3 size={28}/><b>Belum ada transaksi</b><span>Transaksi yang selesai akan muncul di sini.</span></div>}
+      </div>
+    </section>
+
+    {selected && <div className="modalbackdrop" onClick={()=>setSelected(null)}>
+      <div className="modalcard" onClick={e=>e.stopPropagation()}>
+        <div className="formtitle"><div><b>Detail Transaksi</b><small>{selected.invoice_no ?? selected.invoice ?? selected.id}</small></div><button className="clear" onClick={()=>setSelected(null)}><X size={16}/></button></div>
+        <div className="stocklist">
+          {(selected.items ?? []).map((item:any)=><div className="stockrow" key={item.product_id}><div><b>{item.name}</b><small>{item.qty} × {money(Number(item.price||0))}</small></div><strong>{money(Number(item.qty||0)*Number(item.price||0))}</strong></div>)}
+          <div className="stockrow"><b>Total</b><strong>{money(Number(selected.total||0))}</strong></div>
+        </div>
+        {selected.refundedAt || selected.status === "refunded"
+          ? <div className="authnotice">Transaksi ini sudah direfund.</div>
+          : <button className="danger wide" onClick={()=>refund(selected)}>Refund Transaksi</button>}
+      </div>
+    </div>}
+  </div>;
 }
 
 function Reports({ sales, products }: { sales: any[]; products: Product[] }) {
