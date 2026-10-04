@@ -12,6 +12,7 @@ const AUTH_KEY = "berkah-sumbing-auth";
 const USERS_KEY = "berkah-sumbing-users";
 const SHIFT_KEY = "berkah-sumbing-shift";
 const SESSION_KEY = "berkah-sumbing-session";
+const PIN_ATTEMPTS_KEY = "berkah-sumbing-pin-attempts";
 
 async function hashPin(pin: string) {
   const bytes = new TextEncoder().encode(pin);
@@ -42,6 +43,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [recoveryApproverPin, setRecoveryApproverPin] = useState("");
   const [recoveryNewPin, setRecoveryNewPin] = useState("");
   const [recoveryConfirmPin, setRecoveryConfirmPin] = useState("");
+  const [pinAttempts, setPinAttempts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     try {
@@ -59,8 +61,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         nextUsers = [{ id: newId(), ...old }];
         localStorage.setItem(USERS_KEY, JSON.stringify(nextUsers));
       }
-      setUsers(nextUsers);
-      if (nextUsers.length === 0) {
+      setUsers(nextUsers);\n      try {\n        const savedAttempts = localStorage.getItem(PIN_ATTEMPTS_KEY);\n        const parsedAttempts = savedAttempts ? JSON.parse(savedAttempts) : {};\n        if (parsedAttempts && typeof parsedAttempts === "object") setPinAttempts(parsedAttempts);\n      } catch {\n        setPinAttempts({});\n      }\n      if (nextUsers.length === 0) {
         setMode("setup");
       } else {
         const current = nextUsers.find(u => u.id === parsedShift?.userId) ?? nextUsers[0];
@@ -121,13 +122,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setNotice("Pilih pengguna dan masukkan PIN 4–6 digit.");
       return;
     }
-    setBusy(true);
-    try {
-      const valid = (await hashPin(pin)) === selected.pinHash;
-      if (!valid) {
-        setNotice("PIN salah.");
-        return;
-      }
+    const attempts = pinAttempts[selected.id] ?? 0;\n    if (attempts >= 5) {\n      setNotice("PIN dikunci setelah 5 kali salah. Gunakan Lupa PIN untuk membuat PIN baru.");\n      setForgotOpen(true);\n      setRecoveryUserId(selected.id);\n      return;\n    }\n    setBusy(true);\n    try {\n      const valid = (await hashPin(pin)) === selected.pinHash;\n      if (!valid) {\n        const nextAttempts = attempts + 1;\n        const nextMap = { ...pinAttempts, [selected.id]: nextAttempts };\n        setPinAttempts(nextMap);\n        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));\n        setPin("");\n        if (nextAttempts >= 5) {\n          setNotice("PIN salah 5 kali. Akun dikunci, gunakan Lupa PIN untuk membuat PIN baru.");\n          setForgotOpen(true);\n          setRecoveryUserId(selected.id);\n        } else {\n          setNotice("PIN salah. Percobaan " + nextAttempts + " dari 5.");\n        }\n        return;\n      }\n      if (attempts > 0) {\n        const nextMap = { ...pinAttempts };\n        delete nextMap[selected.id];\n        setPinAttempts(nextMap);\n        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));\n      }
       setProfile(selected);
       localStorage.setItem(SESSION_KEY, "1");
       setPin("");
@@ -180,8 +175,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         return;
       }
       const newPinHash = await hashPin(recoveryNewPin);
-      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);
-      saveUsers(nextUsers);
+      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);\n      saveUsers(nextUsers);\n      const nextAttempts = { ...pinAttempts };\n      delete nextAttempts[target.id];\n      setPinAttempts(nextAttempts);\n      localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextAttempts));
       setUsers(nextUsers);
       setRecoveryApproverPin("");
       setRecoveryNewPin("");
@@ -316,7 +310,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             {profile && <div className="rolepill">{profile.role}</div>}
             <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
             <button className="authlink" type="button" onClick={() => { setRecoveryUserId(selectedUserId); setRecoveryApproverId(""); setRecoveryApproverPin(""); setRecoveryNewPin(""); setRecoveryConfirmPin(""); setNotice(""); setForgotOpen(true); }}>Lupa PIN?</button>
-            <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
+            <button className="authprimary" onClick={login} disabled={busy || (pinAttempts[selectedUserId] ?? 0) >= 5}><LogIn size={17}/>{busy ? "Memeriksa..." : (pinAttempts[selectedUserId] ?? 0) >= 5 ? "PIN Dikunci" : "Masuk"}</button>
             <button className="authsecondary" onClick={() => { setMode("signup"); setNotice(""); setPin(""); setPinConfirm(""); setName(""); }}><UserPlus size={16}/> Daftar pengguna baru</button>
           </>
         )}
