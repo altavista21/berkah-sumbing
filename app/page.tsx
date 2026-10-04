@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BarChart3, Boxes, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu,
-  Package, Plus, Receipt, Search, Settings, ShoppingCart, Store, Users, Wallet, X
+  AlertTriangle, BarChart3, Boxes, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu,
+  Package, Plus, Receipt, Search, Settings, ShoppingBag, ShoppingCart, Store, Users, Wallet, X
 } from "lucide-react";
 import "./pos.css";
 import { useAuth } from "./AuthContext";
@@ -1362,8 +1362,8 @@ function Dashboard({
   }).length;
 
   const data = [
-    ["Produk", String(products.length), "tersimpan", Package],
-    ["Stok Menipis", String(lowStock), "perlu dicek", Boxes],
+    ["Produk", String(products.length), "tersimpan", ShoppingBag],
+    ["Stok Menipis", String(lowStock), "perlu dicek", AlertTriangle],
     ["Penyimpanan", "Lokal", "perangkat ini", Store],
     ["Status", "Aktif", "offline-ready", Wallet]
   ] as const;
