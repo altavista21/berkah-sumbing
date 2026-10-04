@@ -69,6 +69,7 @@ export default function Page() {
   const [category, setCategory] = useState("Semua");
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [member, setMember] = useState<Member | null>(null);
   const [memberQuery, setMemberQuery] = useState("");
@@ -96,12 +97,14 @@ export default function Page() {
     try {
       const savedProducts = localStorage.getItem("berkah-sumbing-products");
       const savedMembers = localStorage.getItem("berkah-sumbing-members");
+      const savedSales = readLocal<any[]>("berkah-sumbing-sales", []);
 
       const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
       const nextMembers = readLocal<Member[]>("berkah-sumbing-members", demoMembers);
 
       setProducts(nextProducts);
       setMembers(nextMembers);
+      setSales(savedSales);
 
       if (!savedProducts) {
         localStorage.setItem("berkah-sumbing-products", JSON.stringify(demoProducts));
@@ -236,6 +239,7 @@ export default function Page() {
         id: crypto.randomUUID(),
         invoice_no: invoiceNo,
         created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         items: cart.map(i => ({
           product_id: i.id,
           name: i.name,
@@ -246,6 +250,7 @@ export default function Page() {
         discount,
         total,
         payment_method: payment,
+        payment: payment,
         member_id: member?.id ?? null
       };
 
@@ -262,6 +267,7 @@ export default function Page() {
       });
 
       setProducts(nextProducts);
+      setSales([sale, ...sales]);
       localStorage.setItem(
         "berkah-sumbing-products",
         JSON.stringify(nextProducts)
