@@ -187,3 +187,7 @@ button{cursor:pointer}
   .receiptprint{display:block!important;position:absolute!important;left:0!important;top:0!important;width:80mm!important;margin:0!important;padding:0!important}
   .receiptpaper{width:80mm!important;max-width:none!important;box-shadow:none!important}
 }
+
+.workerstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.worker-table .tr{grid-template-columns:1.5fr 1fr 1fr 1fr 1.5fr}
+@media(max-width:700px){.workerstats{grid-template-columns:1fr}.worker-table .tr{grid-template-columns:1fr auto}.worker-table .tr>span:nth-child(2),.worker-table .tr>span:nth-child(3),.worker-table .tr>span:nth-child(4){font-size:11px;color:var(--muted)}}
