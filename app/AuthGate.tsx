@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { AuthContext, type AuthProfile, type Role, type Shift } from "./AuthContext";
 import { LockKeyhole, LogIn, ShieldCheck, Store, UserPlus, Wallet, X } from "lucide-react";
 import "./auth.css";
 
-type Role = "Kasir" | "Kepala Cabang" | "Manajemen Pusat";
-type AuthProfile = { id: string; name: string; role: Role; pinHash: string };
-type Shift = { id: string; openedAt: string; openingCash: number; role: Role; userId: string; status: "open" };
+
 
 const AUTH_KEY = "berkah-sumbing-auth";
 const USERS_KEY = "berkah-sumbing-users";
@@ -194,7 +193,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             <button onClick={closeShift} className="sessionbtn dangerbtn"><X size={14}/> Tutup Shift</button>
           </div>
         </div>
-        {children}
+        <AuthContext.Provider value={{ profile, shift }}>{children}</AuthContext.Provider>
       </>
     );
   }
