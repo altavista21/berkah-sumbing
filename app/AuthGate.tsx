@@ -165,7 +165,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setNotice("Reset PIN harus disetujui Kepala Cabang atau Manajemen Pusat.");
       return;
     }
-    if (!/^\\d{4,6}$/.test(recoveryApproverPin) || !/^\\d{4,6}$/.test(recoveryNewPin)) {
+    if (!/^\d{4,6}$/.test(recoveryApproverPin) || !/^\d{4,6}$/.test(recoveryNewPin)) {
       setNotice("PIN persetujuan dan PIN baru harus 4–6 digit.");
       return;
     }
@@ -314,7 +314,8 @@ export default function AuthGate({ children }: { children: ReactNode }) {
               </optgroup>
             </select></label>
             {profile && <div className="rolepill">{profile.role}</div>}
-            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>\n            <button className="authlink" type="button" onClick={() => { setRecoveryUserId(selectedUserId); setRecoveryApproverId(""); setRecoveryApproverPin(""); setRecoveryNewPin(""); setRecoveryConfirmPin(""); setNotice(""); setForgotOpen(true); }}>Lupa PIN?</button>
+            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
+            <button className="authlink" type="button" onClick={() => { setRecoveryUserId(selectedUserId); setRecoveryApproverId(""); setRecoveryApproverPin(""); setRecoveryNewPin(""); setRecoveryConfirmPin(""); setNotice(""); setForgotOpen(true); }}>Lupa PIN?</button>
             <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
             <button className="authsecondary" onClick={() => { setMode("signup"); setNotice(""); setPin(""); setPinConfirm(""); setName(""); }}><UserPlus size={16}/> Daftar pengguna baru</button>
           </>
