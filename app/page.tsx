@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3, Boxes, ChevronDown, Clock3, LayoutDashboard, LogOut, Menu,
   Package, Plus, Receipt, Search, Settings, ShoppingCart, Store, Users, Wallet, X
@@ -66,6 +66,8 @@ const nav = [
 export default function Page() {
   const [active, setActive] = useState("Kasir");
   const [query, setQuery] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const barcodeRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState("Semua");
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -150,7 +152,10 @@ export default function Page() {
   const total = Math.max(0, subtotal - discount);
 
   const add = (p: Product) => {
-    if (p.stock <= 0) return;
+    if (p.stock <= 0) {
+      setNotice("Produk sedang habis.");
+      return;
+    }
 
     setCart(c => {
       const existing = c.find(i => i.id === p.id);
@@ -162,6 +167,34 @@ export default function Page() {
           )
         : [{ ...p, qty: 1 }, ...c];
     });
+  };
+
+  const scanBarcode = () => {
+    const code = barcodeInput.trim();
+    if (!code) {
+      barcodeRef.current?.focus();
+      return;
+    }
+
+    const found = products.find(p => p.barcode?.trim() === code);
+    if (!found) {
+      setNotice("Barcode " + code + " tidak ditemukan.");
+      setBarcodeInput("");
+      barcodeRef.current?.focus();
+      return;
+    }
+
+    if (found.stock <= 0) {
+      setNotice(found.name + " sedang habis.");
+      setBarcodeInput("");
+      barcodeRef.current?.focus();
+      return;
+    }
+
+    add(found);
+    setNotice(found.name + " ditambahkan ke keranjang.");
+    setBarcodeInput("");
+    barcodeRef.current?.focus();
   };
 
   const qty = (id: string, delta: number) => {
@@ -622,7 +655,24 @@ export default function Page() {
                     placeholder="Cari produk atau barcode..."
                   />
                 </div>
-                <button className="scan">Scan</button>
+                <div className="barcodeinput">
+                  <span>BAR</span>
+                  <input
+                    ref={barcodeRef}
+                    value={barcodeInput}
+                    onChange={e => setBarcodeInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && scanBarcode()}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Scan / ketik barcode"
+                    aria-label="Barcode produk"
+                  />
+                </div>
+                <button className="scan" onClick={() => {
+                  barcodeRef.current?.focus();
+                }}>
+                  Scan
+                </button>
               </div>
 
               <div className="chips">
