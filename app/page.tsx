@@ -88,6 +88,7 @@ export default function Page() {
     barcode: ""
   });
   const [productEditing, setProductEditing] = useState(false);
+  const [stockForm, setStockForm] = useState({ productId: "", type: "Masuk", qty: "", note: "" });
 
   const loadCatalog = () => {
     try {
@@ -407,6 +408,60 @@ export default function Page() {
   };
 
   const productCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
+  const stockMovements = readLocal<Array<{id:string; productId:string; type:"Masuk"|"Keluar"; qty:number; note:string; createdAt:string}>>(
+    "berkah-sumbing-stock-movements", []
+  );
+
+  const saveStockMovement = () => {
+    const qty = Number(stockForm.qty);
+    const product = products.find(p => p.id === stockForm.productId);
+    if (!product || !Number.isInteger(qty) || qty <= 0) {
+      setNotice("Pilih produk dan masukkan jumlah stok yang valid.");
+      return;
+    }
+    if (stockForm.type === "Keluar" && qty > product.stock) {
+      setNotice("Stok keluar melebihi stok tersedia.");
+      return;
+    }
+
+    try {
+      const latest = readLocal<Product[]>("berkah-sumbing-products", products);
+      const current = latest.find(p => p.id === product.id);
+      if (!current) {
+        setNotice("Produk tidak ditemukan. Muat ulang data.");
+        return;
+      }
+      const nextStock = stockForm.type === "Masuk" ? current.stock + qty : current.stock - qty;
+      const nextProducts = latest.map(p => p.id === current.id ? { ...p, stock: nextStock } : p);
+      localStorage.setItem("berkah-sumbing-products", JSON.stringify(nextProducts));
+
+      const latestMovements = readLocal<Array<{id:string; productId:string; type:"Masuk"|"Keluar"; qty:number; note:string; createdAt:string}>>(
+        "berkah-sumbing-stock-movements", []
+      );
+      const movement = {
+        id: crypto.randomUUID(),
+        productId: current.id,
+        type: stockForm.type as "Masuk"|"Keluar",
+        qty,
+        note: stockForm.note.trim(),
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem("berkah-sumbing-stock-movements", JSON.stringify([movement, ...latestMovements].slice(0, 500)));
+      setProducts(nextProducts);
+      setStockForm({ productId: "", type: "Masuk", qty: "", note: "" });
+      setNotice(`Stok ${stockForm.type.toLowerCase()} berhasil dicatat untuk ${current.name}.`);
+    } catch {
+      setNotice("Perubahan stok gagal disimpan.");
+    }
+  };
+
+  const stockSummary = useMemo(() => {
+    const low = products.filter(p => p.stock <= 10);
+    const out = products.filter(p => p.stock <= 0);
+    const totalUnits = products.reduce((sum, p) => sum + p.stock, 0);
+    return { low, out, totalUnits };
+  }, [products]);
 
   return (
     <main className="shell">
@@ -732,6 +787,56 @@ export default function Page() {
                   )) : (
                     <div className="empty"><Package size={28} /><b>Produk tidak ditemukan</b><span>Tambahkan produk baru atau ubah pencarian.</span></div>
                   )}
+                </div>
+              </section>
+            </div>
+          </div>
+        ) : active === "Stok" ? (
+          <div className="dashboard">
+            <div className="head">
+              <div>
+                <h1>Stok</h1>
+                <p>Kelola stok masuk, stok keluar, dan pantau produk menipis.</p>
+              </div>
+            </div>
+
+            <div className="stockstats">
+              <div className="statcard"><span>Total Unit</span><b>{stockSummary.totalUnits}</b><small>stok seluruh produk</small></div>
+              <div className="statcard"><span>Stok Menipis</span><b>{stockSummary.low.length}</b><small>≤ 10 unit</small></div>
+              <div className="statcard"><span>Stok Habis</span><b>{stockSummary.out.length}</b><small>0 unit</small></div>
+            </div>
+
+            <div className="stockgrid">
+              <section className="formcard">
+                <div className="formtitle"><div><b>Penyesuaian Stok</b><small>Catat stok masuk atau keluar.</small></div></div>
+                <div className="formgrid">
+                  <label>Produk
+                    <select value={stockForm.productId} onChange={e => setStockForm(f => ({...f, productId:e.target.value}))}>
+                      <option value="">Pilih produk</option>
+                      {products.map(p => <option key={p.id} value={p.id}>{p.name} • stok {p.stock}</option>)}
+                    </select>
+                  </label>
+                  <label>Jenis
+                    <select value={stockForm.type} onChange={e => setStockForm(f => ({...f, type:e.target.value}))}>
+                      <option value="Masuk">Stok Masuk</option>
+                      <option value="Keluar">Stok Keluar</option>
+                    </select>
+                  </label>
+                  <label>Jumlah<input type="number" min="1" step="1" value={stockForm.qty} onChange={e => setStockForm(f => ({...f, qty:e.target.value}))} placeholder="10" /></label>
+                  <label>Catatan <span>(opsional)</span><input value={stockForm.note} onChange={e => setStockForm(f => ({...f, note:e.target.value}))} placeholder="Pembelian dari supplier" /></label>
+                </div>
+                <button className="primary wide" onClick={saveStockMovement}><Boxes size={16}/> Simpan Perubahan Stok</button>
+              </section>
+
+              <section className="tablecard">
+                <div className="formtitle"><div><b>Produk Menipis</b><small>Prioritas pengadaan stok.</small></div></div>
+                <div className="stocklist">
+                  {stockSummary.low.length ? stockSummary.low.map(p => (
+                    <div className="stockrow" key={p.id}>
+                      <div><b>{p.name}</b><small>{p.sku} • {p.category}</small></div>
+                      <strong className={p.stock === 0 ? "stockout" : "stocklow"}>{p.stock} unit</strong>
+                    </div>
+                  )) : <div className="empty"><Boxes size={28}/><b>Semua stok aman</b><span>Belum ada produk dengan stok ≤ 10.</span></div>}
                 </div>
               </section>
             </div>
