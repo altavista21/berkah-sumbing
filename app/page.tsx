@@ -83,6 +83,7 @@ export default function Page() {
   const [payment, setPayment] = useState("Tunai");
   const [cash, setCash] = useState("");
   const [paymentRef, setPaymentRef] = useState("");
+  const [receipt, setReceipt] = useState<any | null>(null);
   const [notice, setNotice] = useState("");
   const [menu, setMenu] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -444,6 +445,7 @@ export default function Page() {
           ? Math.max(0, Number(cash) - total)
           : 0;
 
+      setReceipt(sale);
       setNotice(
         "Transaksi berhasil • " +
           invoiceNo +
@@ -1009,6 +1011,13 @@ export default function Page() {
                 {processing ? "Memproses..." : "Bayar " + money(total)}
               </button>
 
+              {receipt && (
+                <button className="secondary wide" type="button" onClick={() => window.print()}>
+                  <Receipt size={17} />
+                  Cetak Struk
+                </button>
+              )}
+
               {notice && <div className="notice">{notice}</div>}
             </aside>
           </div>
@@ -1174,6 +1183,37 @@ export default function Page() {
           />
         )}
       </section>
+
+      {receipt && (
+        <section className="receiptprint" aria-label="Struk transaksi">
+          <div className="receiptpaper">
+            <div className="receipthead">
+              <strong>BERKAH SUMBING</strong>
+              <span>STRUK PEMBELIAN</span>
+            </div>
+            <div className="receiptmeta">
+              <span>{receipt.invoice_no ?? "-"}</span>
+              <span>{new Date(receipt.created_at ?? receipt.createdAt ?? Date.now()).toLocaleString("id-ID")}</span>
+            </div>
+            <div className="receiptitems">
+              {(receipt.items ?? []).map((item: any, index: number) => (
+                <div className="receiptitem" key={item.product_id + "-" + index}>
+                  <span>{item.name} × {item.qty}</span>
+                  <b>{money(Number(item.qty || 0) * Number(item.price || 0))}</b>
+                </div>
+              ))}
+            </div>
+            <div className="receipttotals">
+              <div><span>Subtotal</span><b>{money(Number(receipt.subtotal || 0))}</b></div>
+              <div><span>Diskon</span><b>− {money(Number(receipt.discount || 0))}</b></div>
+              <div className="receiptgrand"><span>Total</span><strong>{money(Number(receipt.total || 0))}</strong></div>
+              <div><span>Pembayaran</span><b>{receipt.payment_method ?? receipt.payment ?? "-"}</b></div>
+              {receipt.payment_reference ? <div><span>Referensi</span><b>{receipt.payment_reference}</b></div> : null}
+            </div>
+            <div className="receiptfoot">Terima kasih sudah berbelanja.</div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
