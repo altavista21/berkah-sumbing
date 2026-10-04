@@ -6,6 +6,7 @@ import {
   Package, Plus, Receipt, Search, Settings, ShoppingCart, Store, Users, Wallet, X
 } from "lucide-react";
 import "./pos.css";
+import { useAuth } from "./AuthContext";
 
 type Product = {
   id: string;
@@ -64,6 +65,7 @@ const nav = [
 ] as const;
 
 export default function Page() {
+  const { profile, shift } = useAuth();
   const [active, setActive] = useState("Kasir");
   const [query, setQuery] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -94,6 +96,19 @@ export default function Page() {
   const [stockForm, setStockForm] = useState({ productId: "", type: "Masuk", qty: "", note: "" });
   const [memberForm, setMemberForm] = useState({ id: "", name: "", phone: "", tier: "Bronze", points: "0" });
   const [memberEditing, setMemberEditing] = useState(false);
+  const allowedNav = useMemo(() => {
+    if (profile?.role === "Kasir") return ["Kasir", "Riwayat"];
+    if (profile?.role === "Kepala Cabang") return ["Dashboard", "Riwayat", "Produk", "Stok", "Member", "Laporan", "Pengaturan"];
+    if (profile?.role === "Manajemen Pusat") return ["Dashboard", "Laporan", "Pengaturan"];
+    return [];
+  }, [profile?.role]);
+
+  useEffect(() => {
+    if (allowedNav.length && !allowedNav.includes(active)) {
+      setActive(allowedNav[0]);
+    }
+  }, [allowedNav, active]);
+
 
   const loadCatalog = () => {
     try {
@@ -576,7 +591,7 @@ export default function Page() {
           <div className="logo">BS</div>
           <div>
             <b>Berkah Sumbing</b>
-            <small>POS • Pusat</small>
+            <small>POS • {profile?.role ?? "Lokal"}</small>
           </div>
           <button className="close" onClick={() => setMenu(false)}>
             <X size={19} />
@@ -584,7 +599,7 @@ export default function Page() {
         </div>
 
         <nav>
-          {nav.map(([name, Icon]) => (
+          {nav.filter(([name]) => allowedNav.includes(name)).map(([name, Icon]) => (
             <button
               className={active === name ? "nav active" : "nav"}
               key={name}
@@ -607,9 +622,9 @@ export default function Page() {
               <small>Perangkat ini</small>
             </div>
           </div>
-          <button className="nav">
+          <button className="nav" onClick={() => window.dispatchEvent(new Event("berkah-sumbing-lock"))}>
             <LogOut size={18} />
-            <span>Keluar</span>
+            <span>Kunci</span>
           </button>
         </div>
       </aside>
@@ -628,7 +643,7 @@ export default function Page() {
               <Clock3 size={15} />
               Lokal
             </span>
-            <span className="avatar">IA</span>
+            <span className="avatar">{profile?.name?.slice(0, 2).toUpperCase() ?? "BS"}</span>
           </div>
         </header>
 
