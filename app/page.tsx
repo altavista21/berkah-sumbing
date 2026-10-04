@@ -409,10 +409,6 @@ export default function Page() {
 
   const productCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
-  const stockMovements = readLocal<Array<{id:string; productId:string; type:"Masuk"|"Keluar"; qty:number; note:string; createdAt:string}>>(
-    "berkah-sumbing-stock-movements", []
-  );
-
   const saveStockMovement = () => {
     const qty = Number(stockForm.qty);
     const product = products.find(p => p.id === stockForm.productId);
