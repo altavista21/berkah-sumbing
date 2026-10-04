@@ -61,7 +61,15 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         nextUsers = [{ id: newId(), ...old }];
         localStorage.setItem(USERS_KEY, JSON.stringify(nextUsers));
       }
-      setUsers(nextUsers);\n      try {\n        const savedAttempts = localStorage.getItem(PIN_ATTEMPTS_KEY);\n        const parsedAttempts = savedAttempts ? JSON.parse(savedAttempts) : {};\n        if (parsedAttempts && typeof parsedAttempts === "object") setPinAttempts(parsedAttempts);\n      } catch {\n        setPinAttempts({});\n      }\n      if (nextUsers.length === 0) {
+      setUsers(nextUsers);
+      try {
+        const savedAttempts = localStorage.getItem(PIN_ATTEMPTS_KEY);
+        const parsedAttempts = savedAttempts ? JSON.parse(savedAttempts) : {};
+        if (parsedAttempts && typeof parsedAttempts === "object") setPinAttempts(parsedAttempts);
+      } catch {
+        setPinAttempts({});
+      }
+      if (nextUsers.length === 0) {
         setMode("setup");
       } else {
         const current = nextUsers.find(u => u.id === parsedShift?.userId) ?? nextUsers[0];
