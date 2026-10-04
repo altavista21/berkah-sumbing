@@ -828,7 +828,7 @@ export default function Page() {
                       onClick={() => add(p)}
                     >
                       <div className="pic">
-                        <Package size={24} />
+                        <ShoppingBag size={24} />
                       </div>
                       <b>{p.name}</b>
                       <small>
