@@ -553,24 +553,13 @@ function Dashboard({
   name: string;
   products: Product[];
 }) {
-  const sales = (() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem("berkah-sumbing-sales") || "[]"
-      ) as Array<{ total?: number }>;
-    } catch {
-      return [];
-    }
-  })();
-
-  const omzet = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const lowStock = products.filter(p => p.stock <= 5).length;
 
   const data = [
-    ["Omzet", money(omzet), "", Wallet],
-    ["Transaksi", String(sales.length), "", Receipt],
-    ["Member Aktif", String(products.length ? "Tersedia" : "0"), "", Users],
-    ["Stok Menipis", String(lowStock), "", Boxes]
+    ["Produk", String(products.length), "tersimpan", Package],
+    ["Stok Menipis", String(lowStock), "perlu dicek", Boxes],
+    ["Penyimpanan", "Lokal", "perangkat ini", Store],
+    ["Status", "Aktif", "offline-ready", Wallet]
   ] as const;
 
   return (
