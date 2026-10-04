@@ -11,3 +11,6 @@
 @media(max-width:700px){.sessionbar{flex-wrap:wrap;padding:8px 10px}.shiftstatus{display:none}.sessionbar>div{margin-left:auto}.authcard{padding:22px;border-radius:18px}}
 
 .authsecondary{width:100%;border:1px solid #cbd5e1;border-radius:11px;padding:10px 14px;margin-top:9px;background:#fff;color:#334155;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}.authsecondary:hover{background:#f8fafc}
+
+.authlink{display:block;width:max-content;margin:8px 0 0 auto;border:0;background:none;color:#475569;font:700 12px system-ui;cursor:pointer;padding:2px}.authlink:hover{text-decoration:underline;color:#0f172a}
+.authmodalbackdrop{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.55)}.authmodal{width:min(430px,100%);max-height:calc(100vh - 36px);overflow:auto;background:#fff;border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(15,23,42,.25)}.authmodal h2{margin:0 0 7px;font-size:21px;color:#0f172a}.authmodalactions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:8px}.authmodalactions .authprimary,.authmodalactions .authsecondary{margin-top:0}
