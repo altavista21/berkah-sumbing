@@ -1019,7 +1019,11 @@ export default function Page() {
             </div>
           </div>
         ) : (
-          <Dashboard name={active} products={products} />
+          <Dashboard
+            name={active}
+            products={products}
+            onAdd={() => setActive("Produk")}
+          />
         )}
       </section>
     </main>
@@ -1150,10 +1154,12 @@ function Reports({ sales, products }: { sales: any[]; products: Product[] }) {
 
 function Dashboard({
   name,
-  products
+  products,
+  onAdd
 }: {
   name: string;
   products: Product[];
+  onAdd: () => void;
 }) {
   const lowStock = products.filter(p => p.stock <= 5).length;
 
@@ -1171,9 +1177,9 @@ function Dashboard({
           <h1>{name}</h1>
           <p>Data POS tersimpan secara lokal di perangkat ini.</p>
         </div>
-        <button className="primary">
+        <button className="primary" onClick={onAdd} type="button">
           <Plus size={16} />
-          Tambah
+          Tambah Produk
         </button>
       </div>
 
