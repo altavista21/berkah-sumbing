@@ -159,6 +159,7 @@ export default function Page() {
       const savedProducts = localStorage.getItem("berkah-sumbing-products");
       const savedMembers = localStorage.getItem("berkah-sumbing-members");
       const savedWorkers = localStorage.getItem("berkah-sumbing-workers");
+      const savedUsers = localStorage.getItem("berkah-sumbing-users");
       const savedSales = readLocal<any[]>("berkah-sumbing-sales", []);
 
       const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
