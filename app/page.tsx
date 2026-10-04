@@ -316,6 +316,47 @@ export default function Page() {
     }
   };
 
+  const exportBackup = () => {
+    const backup = {
+      app: "berkah-sumbing-pos",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      products: readLocal<Product[]>("berkah-sumbing-products", products),
+      members: readLocal<Member[]>("berkah-sumbing-members", members),
+      sales: readLocal<any[]>("berkah-sumbing-sales", sales),
+      stockMovements: readLocal<any[]>("berkah-sumbing-stock-movements", [])
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `berkah-sumbing-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    setNotice("Backup berhasil dibuat.");
+  };
+
+  const importBackup = (event: any) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+        if (data?.app !== "berkah-sumbing-pos" || !Array.isArray(data.products) || !Array.isArray(data.members) || !Array.isArray(data.sales)) {
+          throw new Error("invalid");
+        }
+        if (!window.confirm("Restore backup akan mengganti data lokal saat ini. Lanjutkan?")) return;
+        localStorage.setItem("berkah-sumbing-products", JSON.stringify(data.products));
+        localStorage.setItem("berkah-sumbing-members", JSON.stringify(data.members));
+        localStorage.setItem("berkah-sumbing-sales", JSON.stringify(data.sales));
+        localStorage.setItem("berkah-sumbing-stock-movements", JSON.stringify(Array.isArray(data.stockMovements) ? data.stockMovements : []));
+        setProducts(data.products); setMembers(data.members); setSales(data.sales);
+        setNotice("Backup berhasil dipulihkan.");
+      } catch { setNotice("File backup tidak valid."); }
+      event.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   const resetProductForm = () => {
     setProductForm({
       id: "",
@@ -889,6 +930,22 @@ export default function Page() {
           </div>
         ) : active === "Laporan" ? (
           <Reports sales={sales} products={products} />
+        ) : active === "Pengaturan" ? (
+          <div className="dashboard">
+            <div className="head"><div><h1>Pengaturan</h1><p>Kelola data lokal POS dan backup perangkat.</p></div></div>
+            <div className="settingsgrid">
+              <section className="formcard backupbox">
+                <div className="formtitle"><div><b>Backup Data</b><small>Simpan produk, member, transaksi, dan riwayat stok.</small></div></div>
+                <p>File backup berbentuk JSON dan dapat dipindahkan ke perangkat lain.</p>
+                <button className="primary" onClick={exportBackup}><Receipt size={16}/> Export Backup</button>
+              </section>
+              <section className="formcard backupbox">
+                <div className="formtitle"><div><b>Restore Data</b><small>Ganti data lokal dengan file backup.</small></div></div>
+                <p>Gunakan backup dari aplikasi Berkah Sumbing. Data saat ini akan diganti.</p>
+                <label className="primary" style={{cursor:"pointer",justifyContent:"center"}}>Import Backup<input type="file" accept="application/json,.json" onChange={importBackup} hidden /></label>
+              </section>
+            </div>
+          </div>
         ) : (
           <Dashboard name={active} products={products} />
         )}
