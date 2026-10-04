@@ -174,6 +174,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     setMode("login");
   };
 
+  useEffect(() => {
+    const handler = () => lock();
+    window.addEventListener("berkah-sumbing-lock", handler);
+    return () => window.removeEventListener("berkah-sumbing-lock", handler);
+  }, [session]);
+
   const closeShift = () => {
     if (!shift) return;
     const sales = (() => { try { return JSON.parse(localStorage.getItem("berkah-sumbing-sales") || "[]") as any[]; } catch { return []; } })();
