@@ -51,10 +51,10 @@ const demoProducts: Product[] = [
 const demoWorkers: Worker[] = [
   {
     id: "demo-worker-1",
-    name: "Budi Santoso",
+    name: "Andi",
     gender: "Karyawan",
     position: "Pramuniaga",
-    phone: "081234567891",
+    phone: "",
     monthlySalary: 3000000,
     workStart: "08:00",
     workEnd: "17:00",
@@ -62,10 +62,10 @@ const demoWorkers: Worker[] = [
   },
   {
     id: "demo-worker-2",
-    name: "Rina Lestari",
+    name: "Yunita",
     gender: "Karyawati",
     position: "Kasir",
-    phone: "081234567892",
+    phone: "",
     monthlySalary: 3000000,
     workStart: "08:00",
     workEnd: "17:00",
