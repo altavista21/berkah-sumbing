@@ -155,3 +155,8 @@ button{cursor:pointer}
   .head .primary{font-size:10px}
   .stats{gap:6px}
 }
+
+
+.paymentextra{display:grid;gap:7px;margin-top:7px}
+.paymenthint{background:#f7f9fc;border:1px solid var(--border,#e6eaf0);border-radius:8px;padding:9px;color:var(--muted,#6b7484);font-size:9px;line-height:1.45}
+.paymenthint b{color:var(--text,#172033)}
