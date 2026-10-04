@@ -663,7 +663,10 @@ export default function Page() {
                   <h1>Kasir</h1>
                   <p>Transaksi cepat dengan stok yang tersimpan di perangkat.</p>
                 </div>
-                <button className="secondary">
+                <button className="secondary" type="button" onClick={() => {
+                  setActive("Riwayat");
+                  setMenu(false);
+                }}>
                   <Receipt size={16} />
                   Riwayat
                 </button>
