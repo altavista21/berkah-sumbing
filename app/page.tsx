@@ -676,9 +676,15 @@ export default function Page() {
   };
 
   const stockSummary = useMemo(() => {
-    const low = products.filter(p => p.stock <= 10);
-    const out = products.filter(p => p.stock <= 0);
-    const totalUnits = products.reduce((sum, p) => sum + p.stock, 0);
+    // Status stok harus saling eksklusif:
+    // 0 = habis, 1-10 = menipis, >10 = aman.
+    const normalizedProducts = products.map(p => ({
+      ...p,
+      stock: Math.max(0, Number(p.stock) || 0)
+    }));
+    const low = normalizedProducts.filter(p => p.stock > 0 && p.stock <= 10);
+    const out = normalizedProducts.filter(p => p.stock === 0);
+    const totalUnits = normalizedProducts.reduce((sum, p) => sum + p.stock, 0);
     return { low, out, totalUnits };
   }, [products]);
 
