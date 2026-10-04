@@ -116,8 +116,8 @@ begin
   end if;
   if p_payment_method='cash' then v_change := p_paid_amount-v_total; end if;
 
-  insert into sales(invoice_no,branch_id,shift_id,member_id,subtotal,discount,total,payment_method,paid_amount,change_amount,points_redeemed)
-  values(v_invoice,p_branch_id,p_shift_id,p_member_id,v_subtotal,coalesce(p_discount,0),v_total,p_payment_method,p_paid_amount,v_change,v_points);
+  insert into sales(id,invoice_no,branch_id,shift_id,member_id,subtotal,discount,total,payment_method,paid_amount,change_amount,points_redeemed)
+  values(v_sale_id,v_invoice,p_branch_id,p_shift_id,p_member_id,v_subtotal,coalesce(p_discount,0),v_total,p_payment_method,p_paid_amount,v_change,v_points);
 
   for item in select * from jsonb_array_elements(p_items) loop
     v_line := (item->>'unit_price')::numeric * (item->>'quantity')::numeric - coalesce((item->>'item_discount')::numeric,0);
@@ -133,7 +133,7 @@ begin
     update members set points=greatest(0,points-v_points)+floor(v_total/10000), updated_at=now() where id=p_member_id;
   end if;
 
-  update sales set id=v_sale_id, points_earned=case when p_member_id is not null then floor(v_total/10000) else 0 end where invoice_no=v_invoice;
+  update sales set points_earned=case when p_member_id is not null then floor(v_total/10000) else 0 end where id=v_sale_id;
   return jsonb_build_object('sale_id',v_sale_id,'invoice_no',v_invoice,'total',v_total,'change_amount',v_change);
 end;
 $$;
