@@ -89,6 +89,9 @@ export default function Page() {
   });
   const [productEditing, setProductEditing] = useState(false);
   const [stockForm, setStockForm] = useState({ productId: "", type: "Masuk", qty: "", note: "" });
+  const [memberForm, setMemberForm] = useState({ id: "", name: "", phone: "", tier: "Bronze", points: "0" });
+  const [memberEditing, setMemberEditing] = useState(false);
+  const [memberQuery, setMemberQuery] = useState("");
 
   const loadCatalog = () => {
     try {
@@ -408,6 +411,34 @@ export default function Page() {
   };
 
   const productCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
+  const resetMemberForm = () => {
+    setMemberForm({ id: "", name: "", phone: "", tier: "Bronze", points: "0" });
+    setMemberEditing(false);
+  };
+  const saveMember = () => {
+    const name = memberForm.name.trim(), phone = memberForm.phone.trim(), points = Number(memberForm.points);
+    if (!name || !phone || !Number.isInteger(points) || points < 0) { setNotice("Lengkapi nama, nomor HP, dan poin dengan benar."); return; }
+    const latest = readLocal<Member[]>("berkah-sumbing-members", members);
+    if (latest.some(m => m.phone === phone && m.id !== memberForm.id)) { setNotice("Nomor HP sudah terdaftar sebagai member."); return; }
+    const member: Member = { id: memberForm.id || crypto.randomUUID(), name, phone, tier: memberForm.tier as Member["tier"], points };
+    const next = memberForm.id ? latest.map(m => m.id === memberForm.id ? member : m) : [member, ...latest];
+    localStorage.setItem("berkah-sumbing-members", JSON.stringify(next)); setMembers(next); resetMemberForm();
+    setNotice(memberForm.id ? "Member berhasil diperbarui." : "Member berhasil ditambahkan.");
+  };
+  const editMember = (m: Member) => {
+    setMemberForm({ id:m.id, name:m.name, phone:m.phone, tier:m.tier, points:String(m.points) });
+    setMemberEditing(true);
+  };
+  const deleteMember = (id: string) => {
+    const m = members.find(x => x.id === id);
+    if (!m || !window.confirm(`Hapus member "${m.name}"?`)) return;
+    const latest = readLocal<Member[]>("berkah-sumbing-members", members);
+    const next = latest.filter(x => x.id !== id);
+    localStorage.setItem("berkah-sumbing-members", JSON.stringify(next)); setMembers(next);
+    if (memberForm.id === id) resetMemberForm(); setNotice("Member berhasil dihapus.");
+  };
+  const filteredMembers = members.filter(m => [m.name,m.phone,m.tier].join(" ").toLowerCase().includes(memberQuery.toLowerCase()));
 
   const saveStockMovement = () => {
     const qty = Number(stockForm.qty);
@@ -837,12 +868,44 @@ export default function Page() {
               </section>
             </div>
           </div>
+        ) : active === "Member" ? (
+          <div className="dashboard">
+            <div className="head"><div><h1>Member</h1><p>Kelola pelanggan, tier, dan poin loyalti.</p></div><button className="primary" onClick={resetMemberForm}><Plus size={16}/> Member Baru</button></div>
+            <div className="membermanager">
+              <section className="formcard"><div className="formtitle"><div><b>{memberEditing ? "Edit Member" : "Tambah Member"}</b><small>Data tersimpan lokal.</small></div>{memberEditing && <button className="clear" onClick={resetMemberForm}>Batal</button>}</div>
+                <div className="formgrid">
+                  <label>Nama<input value={memberForm.name} onChange={e=>setMemberForm(f=>({...f,name:e.target.value}))} placeholder="Nama pelanggan"/></label>
+                  <label>Nomor HP<input value={memberForm.phone} onChange={e=>setMemberForm(f=>({...f,phone:e.target.value}))} placeholder="08xxxxxxxxxx"/></label>
+                  <label>Tier<select value={memberForm.tier} onChange={e=>setMemberForm(f=>({...f,tier:e.target.value}))}><option>Bronze</option><option>Silver</option><option>Gold</option></select></label>
+                  <label>Poin<input type="number" min="0" value={memberForm.points} onChange={e=>setMemberForm(f=>({...f,points:e.target.value}))}/></label>
+                </div><button className="primary wide" onClick={saveMember}><Users size={16}/>{memberEditing ? "Simpan Perubahan" : "Simpan Member"}</button>
+              </section>
+              <section className="tablecard"><div className="tabletools"><div className="search"><Search size={17}/><input value={memberQuery} onChange={e=>setMemberQuery(e.target.value)} placeholder="Cari member..."/></div></div>
+                <div className="producttable"><div className="tr th"><span>Member</span><span>Tier</span><span>Poin</span><span>HP</span><span>Aksi</span></div>
+                {filteredMembers.map(m=><div className="tr" key={m.id}><div><b>{m.name}</b><small>{m.phone}</small></div><span>{m.tier}</span><span>{m.points.toLocaleString("id-ID")}</span><span>{m.phone}</span><div className="actions"><button className="secondary small" onClick={()=>editMember(m)}>Edit</button><button className="danger small" onClick={()=>deleteMember(m.id)}>Hapus</button></div></div>)}
+                {!filteredMembers.length && <div className="empty"><Users size={28}/><b>Member tidak ditemukan</b><span>Tambahkan member baru.</span></div>}</div>
+              </section>
+            </div>
+          </div>
+        ) : active === "Laporan" ? (
+          <Reports sales={sales} products={products} />
         ) : (
           <Dashboard name={active} products={products} />
         )}
       </section>
     </main>
   );
+}
+
+function Reports({ sales, products }: { sales: any[]; products: Product[] }) {
+  const total=sales.reduce((s,x)=>s+Number(x.total||0),0);
+  const methods=["Tunai","QRIS","Transfer","Poin"];
+  return <div className="dashboard"><div className="head"><div><h1>Laporan</h1><p>Ringkasan transaksi lokal.</p></div></div>
+    <div className="stockstats"><div className="statcard"><span>Total Transaksi</span><b>{sales.length}</b></div><div className="statcard"><span>Total Penjualan</span><b>{money(total)}</b></div><div className="statcard"><span>Rata-rata</span><b>{money(sales.length?total/sales.length:0)}</b></div></div>
+    <div className="stockgrid"><section className="tablecard"><div className="formtitle"><div><b>Pembayaran</b><small>Nilai per metode.</small></div></div><div className="stocklist">{methods.map(m=><div className="stockrow" key={m}><b>{m}</b><strong>{money(sales.filter(x=>x.payment===m).reduce((s,x)=>s+Number(x.total||0),0))}</strong></div>)}</div></section>
+    <section className="tablecard"><div className="formtitle"><div><b>Inventori</b><small>Ringkasan stok.</small></div></div><div className="stocklist"><div className="stockrow"><b>Produk</b><strong>{products.length}</strong></div><div className="stockrow"><b>Menipis</b><strong>{products.filter(p=>p.stock<=10).length}</strong></div><div className="stockrow"><b>Habis</b><strong>{products.filter(p=>p.stock<=0).length}</strong></div></div></section></div>
+    <section className="tablecard"><div className="formtitle"><div><b>Transaksi Terbaru</b><small>10 transaksi terakhir.</small></div></div><div className="producttable"><div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span></span></div>{sales.slice(0,10).map(x=><div className="tr" key={x.id}><span>{x.invoice||x.id}</span><span>{x.createdAt?new Date(x.createdAt).toLocaleString("id-ID"):"-"}</span><span>{x.payment||"-"}</span><b>{money(Number(x.total||0))}</b><span/></div>)}{!sales.length&&<div className="empty"><Receipt size={28}/><b>Belum ada transaksi</b><span>Transaksi Kasir akan muncul di sini.</span></div>}</div></section>
+  </div>;
 }
 
 function Dashboard({
