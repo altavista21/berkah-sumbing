@@ -153,7 +153,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const resetForgottenPin = async () => {
     const target = users.find(u => u.id === recoveryUserId);
     const approver = users.find(u => u.id === recoveryApproverId);
-    if (!target || !approver) {\n      setNotice("Pilih akun dan pemberi persetujuan.");\n      return;\n    }
+    if (!target || !approver) {
+      setNotice("Pilih akun dan pemberi persetujuan.");
+      return;
+    }
     if (approver.id === target.id) {
       setNotice("Akun yang lupa PIN tidak dapat menjadi pemberi persetujuan.");
       return;
