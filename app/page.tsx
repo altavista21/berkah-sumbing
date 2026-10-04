@@ -91,7 +91,6 @@ export default function Page() {
   const [stockForm, setStockForm] = useState({ productId: "", type: "Masuk", qty: "", note: "" });
   const [memberForm, setMemberForm] = useState({ id: "", name: "", phone: "", tier: "Bronze", points: "0" });
   const [memberEditing, setMemberEditing] = useState(false);
-  const [memberQuery, setMemberQuery] = useState("");
 
   const loadCatalog = () => {
     try {
