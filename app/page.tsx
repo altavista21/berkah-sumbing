@@ -1310,7 +1310,7 @@ export default function Page() {
 
 function Workers({workers,form,setForm,editing,onNew,onSave,onEdit,onResign,onDelete}:{workers:Worker[];form:any;setForm:any;editing:boolean;onNew:()=>void;onSave:()=>void;onEdit:(w:Worker)=>void;onResign:(id:string)=>void;onDelete:(id:string)=>void}){
 return <div className="dashboard">
-<div className="head"><div><h1>Pekerja</h1><p>Kelola karyawan dan karyawati, jam kerja, status, dan gaji bulanan.</p></div><button className="primary" onClick={onNew}><Plus size={16}/> Pekerja Baru</button></div>
+<div className="head"><div><h1>Pekerja</h1><p>Kelola karyawan dan karyawati, jam kerja, status, dan gaji bulanan.</p></div></div>
 <div className="workerstats"><div className="statcard"><span>Pekerja Aktif</span><b>{workers.filter(w=>w.status==="Aktif").length}</b><small>sedang bekerja</small></div><div className="statcard"><span>Resign</span><b>{workers.filter(w=>w.status==="Resign").length}</b><small>belum dihapus</small></div><div className="statcard"><span>Total Gaji / Bulan</span><b>{money(workers.filter(w=>w.status==="Aktif").reduce((s,w)=>s+w.monthlySalary,0))}</b><small>pekerja aktif</small></div></div>
 <section className="formcard"><div className="formtitle"><div><b>{editing?"Edit Pekerja":"Tambah Pekerja"}</b><small>Data tersimpan lokal di perangkat ini.</small></div>{editing&&<button className="clear" onClick={onNew}>Batal</button>}</div>
 <div className="formgrid">
