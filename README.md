@@ -9,32 +9,19 @@ POS multi-cabang dan membership berdasarkan PRD Aplikasi Kasir Berkah Sumbing v1
 - Modul navigasi: Dashboard, Kasir, Produk, Stok, Member, Laporan, Pengaturan.
 - Katalog kasir dengan pencarian nama/SKU dan kategori.
 - Keranjang, quantity, diskon member, metode Tunai/QRIS/Transfer/Poin.
-- Fondasi database terpusat untuk cabang, produk, stok, shift, member, penjualan, mutasi stok, dan transfer stok.
-- Supabase client opsional melalui NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
-- NEXT_PUBLIC_SUPABASE_ANON_KEY tetap didukung sebagai fallback legacy.
-- RPC checkout_sale untuk checkout atomik: penjualan + detail item + pengurangan stok + mutasi stok + poin member dalam satu transaksi database.
-- Endpoint /api/health untuk mengecek apakah backend Supabase sudah terhubung.
+- Penyimpanan lokal berbasis `localStorage` untuk produk, member, dan transaksi.
+- Checkout lokal yang mengurangi stok dan menyimpan riwayat transaksi di perangkat.
+- Endpoint `/api/health` untuk mengecek aplikasi.
 
 ### Belum dianggap selesai
 - Login/PIN dan role Kasir/Admin Cabang/Manajemen Pusat.
-- CRUD produksi untuk Produk, Member, Cabang, Harga, dan Stok.
-- Open/close shift yang benar-benar tersimpan.
-- Transfer stok + Good Received Note.
+- CRUD produk, member, cabang, harga, dan stok melalui UI.
 - Laporan omzet, laba-rugi, produk terlaris, dan analitik member.
 - Printer thermal Bluetooth/USB dan struk WhatsApp.
-- Sinkronisasi realtime antar cabang.
+- Sinkronisasi realtime antar perangkat/cabang.
 - Barcode/QR scanner perangkat.
-- Refund dan riwayat transaksi.
-- RLS/policy Supabase yang disesuaikan dengan role pengguna.
-
-## Menjalankan
-
-npm install
-npm run dev
-
-Buat .env.local dari .env.example dan isi URL serta publishable key Supabase. Jangan commit .env.local.
-
-Setelah schema dijalankan di Supabase, endpoint /api/health dapat digunakan untuk memastikan koneksi backend. Untuk deployment Vercel, variabel ini harus ditambahkan pada Project Settings > Environment Variables dan deployment perlu di-redeploy.
+- Refund dan riwayat transaksi yang lebih lengkap.
+- Backup/restore data dan ekspor laporan.
 
 ## Catatan PRD
 
@@ -42,8 +29,8 @@ Implementasi mengikuti kebutuhan PRD v1.1. Nilai diskon tier, rasio poin, aturan
 
 ## Tahap berikutnya
 
-Tahap berikutnya adalah memastikan schema dan RLS Supabase siap, lalu mengaktifkan checkout nyata menggunakan checkout_sale. Setelah alur kasir stabil, modul stok/member/produk dan laporan dibangun di atas sumber data yang sama.
+Fokus berikutnya adalah menyelesaikan modul Produk, Stok, Member, Laporan, backup/restore, dan alur transaksi lokal sebelum mempertimbangkan sinkronisasi cloud.
 
 ## Deployment
 
-Production deployment menggunakan integrasi GitHub → Vercel. Setiap perubahan pada branch main akan memicu deployment production sehingga konfigurasi environment terbaru dapat ikut digunakan.
+Production deployment menggunakan integrasi GitHub → Vercel. Setiap perubahan pada branch `main` akan memicu deployment production.
