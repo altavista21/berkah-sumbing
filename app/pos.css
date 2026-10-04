@@ -34,3 +34,9 @@
 .stocklist{display:grid}.stockrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border,#eef0f2)}
 .stockrow small{display:block;color:var(--muted,#6b7280);margin-top:3px}.stocklow{color:#b54708}.stockout{color:#b42318}
 @media(max-width:700px){.stockstats{grid-template-columns:1fr}.stockgrid{grid-template-columns:1fr}}
+
+.membermanager{display:grid;gap:16px}
+.settingsgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.backupbox{display:grid;gap:12px}
+.backupbox p{margin:0;color:var(--muted,#6b7280);font-size:13px;line-height:1.5}
+@media(max-width:700px){.settingsgrid{grid-template-columns:1fr}}
