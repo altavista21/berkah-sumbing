@@ -51,3 +51,107 @@
 .barcodeinput span{font-size:10px;font-weight:800;color:var(--muted,#6b7280);letter-spacing:.08em}
 .barcodeinput input{width:100%;border:0;outline:0;background:transparent;font:inherit;min-width:0}
 @media(max-width:700px){.searchrow{display:grid!important;grid-template-columns:1fr}.barcodeinput{width:100%;box-sizing:border-box}.searchrow .scan{width:100%}}
+
+
+/* Mobile-first polish */
+:root{--bg:#f6f8fb;--card:#fff;--border:#e6eaf0;--text:#172033;--muted:#6b7484;--blue:#1769e0}
+body{margin:0;background:var(--bg);color:var(--text)}
+button,input,select{font-family:inherit}
+button{cursor:pointer}
+.sidebar{background:#fff}
+.nav{transition:background .15s,color .15s}
+.nav:active{transform:translateY(1px)}
+.topbar{position:sticky;top:0;z-index:20}
+.catalog,.dashboard{max-width:1400px}
+.product{transition:box-shadow .15s,border-color .15s,transform .15s}
+.product:active{transform:scale(.99)}
+.primary{cursor:pointer}
+.checkout{min-width:0}
+
+@media(max-width:800px){
+  .topbar{height:58px}
+  .crumb{font-size:12px}
+  .topright{gap:7px}
+  .avatar{width:30px;height:30px}
+  .catalog{padding:14px}
+  .dashboard{padding:14px}
+  .head{align-items:flex-start;margin-bottom:14px}
+  .head p{line-height:1.45}
+  .head .primary{flex-shrink:0}
+  .pos{min-height:calc(100vh - 58px)}
+  .checkout{padding:14px;border-top:8px solid var(--bg);max-height:none}
+  .cart{max-height:280px;min-height:90px}
+  .products{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .product{min-height:128px;border-radius:12px}
+  .pic{width:40px;height:40px;margin-bottom:7px}
+  .product>b{font-size:11px}
+  .product strong{font-size:12px}
+  .searchrow{display:grid;grid-template-columns:1fr;gap:8px}
+  .barcodeinput{min-width:0}
+  .scan{width:100%;justify-content:center}
+  .chips{margin:0 -2px;padding:10px 2px}
+  .paygrid{grid-template-columns:repeat(2,1fr);gap:7px}
+  .pay{min-height:42px}
+  .paybutton{min-height:46px;font-size:12px}
+  .notice{line-height:1.4}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat{min-width:0}
+  .stockstats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .statcard{padding:12px}
+  .statcard b{font-size:21px}
+  .settingsgrid,.stockgrid,.panels{grid-template-columns:1fr}
+}
+
+@media(max-width:560px){
+  .topbar{padding:0 10px}
+  .topright .shift{display:none}
+  .crumb{max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .catalog,.dashboard{padding:10px}
+  .head h1{font-size:20px}
+  .head p{font-size:11px}
+  .head .primary{padding:9px 10px}
+  .products{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .product{padding:10px;min-height:124px}
+  .product em{font-size:7px}
+  .stockstats{grid-template-columns:1fr 1fr}
+  .stockstats .statcard:last-child{grid-column:1/-1}
+  .formcard,.tablecard,.modalcard{border-radius:12px;padding:13px}
+  .formtitle{margin-bottom:12px}
+  .formgrid{gap:10px}
+  .formgrid input,.formgrid select,.tabletools select{min-height:44px}
+  .tabletools{gap:8px}
+  .producttable{overflow:visible}
+  .producttable .th{display:none}
+  .producttable .tr:not(.th){
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:7px 10px;
+    min-width:0;
+    padding:13px 2px;
+    border-bottom:1px solid var(--border);
+  }
+  .producttable .tr:not(.th)>span:nth-child(2),
+  .producttable .tr:not(.th)>span:nth-child(3),
+  .producttable .tr:not(.th)>span:nth-child(4){
+    font-size:11px;
+    color:var(--muted);
+  }
+  .producttable .tr:not(.th)>span:nth-child(2){grid-column:1}
+  .producttable .tr:not(.th)>span:nth-child(3){grid-column:1}
+  .producttable .tr:not(.th)>span:nth-child(4){grid-column:1}
+  .producttable .tr:not(.th) .actions{grid-column:2;grid-row:1 / span 4;align-self:center;display:grid}
+  .actions .small{min-height:38px}
+  .historyrow{grid-template-columns:1fr auto!important}
+  .modalbackdrop{padding:10px}
+  .modalcard{max-height:90vh}
+}
+
+@media(max-width:390px){
+  .products{gap:6px}
+  .product{padding:8px;min-height:118px}
+  .product>b{font-size:10px}
+  .product small{font-size:8px}
+  .product strong{font-size:11px}
+  .head .primary{font-size:10px}
+  .stats{gap:6px}
+}
