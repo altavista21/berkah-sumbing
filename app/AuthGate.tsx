@@ -235,10 +235,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           </>
         )}
 
-        ." : "Masuk"}</button>
-          </>
-        )}
-
         {mode === "shift" && (
           <>
             <div className="authtitle"><h1>Buka shift kasir</h1><p>Masukkan modal awal sebelum mulai transaksi.</p></div>
