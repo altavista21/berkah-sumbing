@@ -1198,3 +1198,265 @@ export default function Page() {
         ) : active === "Pekerja" ? (
           <Workers workers={workers} form={workerForm} setForm={setWorkerForm} editing={workerEditing} onNew={resetWorkerForm} onSave={saveWorker} onEdit={editWorker} onResign={resignWorker} onDelete={deleteResignedWorker}/>
         ) : active === "Riwayat" ? (
+          <History sales={sales} products={products} members={members} setSales={setSales} setProducts={setProducts} setMembers={setMembers} />
+        ) : active === "Laporan" ? (
+          <Reports sales={sales} products={products} />
+        ) : active === "Pengaturan" ? (
+          <div className="dashboard">
+            <div className="head"><div><h1>Pengaturan</h1><p>Kelola data lokal POS dan backup perangkat.</p></div></div>
+            <div className="settingsgrid">
+              <section className="formcard backupbox">
+                <div className="formtitle"><div><b>Backup Data</b><small>Simpan produk, member, transaksi, dan riwayat stok.</small></div></div>
+                <p>File backup berbentuk JSON dan dapat dipindahkan ke perangkat lain.</p>
+                <button className="primary" onClick={exportBackup}><Receipt size={16}/> Export Backup</button>
+              </section>
+              <section className="formcard backupbox">
+                <div className="formtitle"><div><b>Restore Data</b><small>Ganti data lokal dengan file backup.</small></div></div>
+                <p>Gunakan backup dari aplikasi Berkah Sumbing. Data saat ini akan diganti.</p>
+                <label className="primary" style={{cursor:"pointer",justifyContent:"center"}}>Import Backup<input type="file" accept="application/json,.json" onChange={importBackup} hidden /></label>
+              </section>
+            </div>
+          </div>
+        ) : (
+          <Dashboard
+            name={active}
+            products={products}
+            onAdd={profile?.role === "Manajemen Pusat" ? undefined : () => setActive("Produk")}
+          />
+        )}
+      </section>
+
+      {receipt && (
+        <section className="receiptprint" aria-label="Struk transaksi">
+          <div className="receiptpaper">
+            <div className="receipthead">
+              <strong>BERKAH SUMBING</strong>
+              <span>STRUK PEMBELIAN</span>
+            </div>
+            <div className="receiptmeta">
+              <span>{receipt.invoice_no ?? "-"}</span>
+              <span>{new Date(receipt.created_at ?? receipt.createdAt ?? Date.now()).toLocaleString("id-ID")}</span>
+            </div>
+            <div className="receiptitems">
+              {(receipt.items ?? []).map((item: any, index: number) => (
+                <div className="receiptitem" key={item.product_id + "-" + index}>
+                  <span>{item.name} × {item.qty}</span>
+                  <b>{money(Number(item.qty || 0) * Number(item.price || 0))}</b>
+                </div>
+              ))}
+            </div>
+            <div className="receipttotals">
+              <div><span>Subtotal</span><b>{money(Number(receipt.subtotal || 0))}</b></div>
+              <div><span>Diskon</span><b>− {money(Number(receipt.discount || 0))}</b></div>
+              <div className="receiptgrand"><span>Total</span><strong>{money(Number(receipt.total || 0))}</strong></div>
+              <div><span>Pembayaran</span><b>{receipt.payment_method ?? receipt.payment ?? "-"}</b></div>
+              {receipt.payment_reference ? <div><span>Referensi</span><b>{receipt.payment_reference}</b></div> : null}
+            </div>
+            <div className="receiptfoot">Terima kasih sudah berbelanja.</div>
+          </div>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function Workers({workers,form,setForm,editing,onNew,onSave,onEdit,onResign,onDelete}:{workers:Worker[];form:any;setForm:any;editing:boolean;onNew:()=>void;onSave:()=>void;onEdit:(w:Worker)=>void;onResign:(id:string)=>void;onDelete:(id:string)=>void}){
+return <div className="dashboard">
+<div className="head"><div><h1>Pekerja</h1><p>Kelola karyawan dan karyawati, jam kerja, status, dan gaji bulanan.</p></div><button className="primary" onClick={onNew}><Plus size={16}/> Pekerja Baru</button></div>
+<div className="workerstats"><div className="statcard"><span>Pekerja Aktif</span><b>{workers.filter(w=>w.status==="Aktif").length}</b><small>sedang bekerja</small></div><div className="statcard"><span>Resign</span><b>{workers.filter(w=>w.status==="Resign").length}</b><small>belum dihapus</small></div><div className="statcard"><span>Total Gaji / Bulan</span><b>{money(workers.filter(w=>w.status==="Aktif").reduce((s,w)=>s+w.monthlySalary,0))}</b><small>pekerja aktif</small></div></div>
+<section className="formcard"><div className="formtitle"><div><b>{editing?"Edit Pekerja":"Tambah Pekerja"}</b><small>Data tersimpan lokal di perangkat ini.</small></div>{editing&&<button className="clear" onClick={onNew}>Batal</button>}</div>
+<div className="formgrid">
+<label>Nama Lengkap<input value={form.name} onChange={e=>setForm((f:any)=>({...f,name:e.target.value}))} placeholder="Nama karyawan/karyawati"/></label>
+<label>Jenis<select value={form.gender} onChange={e=>setForm((f:any)=>({...f,gender:e.target.value}))}><option>Karyawan</option><option>Karyawati</option></select></label>
+<label>Jabatan<input value={form.position} onChange={e=>setForm((f:any)=>({...f,position:e.target.value}))} placeholder="Kasir, pramuniaga, kepala toko"/></label>
+<label>No. HP <span>(opsional)</span><input value={form.phone} onChange={e=>setForm((f:any)=>({...f,phone:e.target.value}))} placeholder="08xxxxxxxxxx"/></label>
+<label>Gaji per Bulan<input type="number" min="0" step="1000" value={form.monthlySalary} onChange={e=>setForm((f:any)=>({...f,monthlySalary:e.target.value}))} placeholder="3000000"/></label>
+<label>Jam Masuk<input type="time" value={form.workStart} onChange={e=>setForm((f:any)=>({...f,workStart:e.target.value}))}/></label>
+<label>Jam Pulang<input type="time" value={form.workEnd} onChange={e=>setForm((f:any)=>({...f,workEnd:e.target.value}))}/></label>
+<label>Status<select value={form.status} onChange={e=>setForm((f:any)=>({...f,status:e.target.value}))}><option>Aktif</option><option>Resign</option></select></label>
+</div><button className="primary wide" onClick={onSave}><Users size={16}/>{editing?"Simpan Perubahan":"Simpan Pekerja"}</button></section>
+<section className="tablecard"><div className="formtitle"><div><b>Daftar Pekerja</b><small>Hanya data resign yang dapat dihapus.</small></div></div>
+<div className="producttable worker-table"><div className="tr th"><span>Nama</span><span>Jabatan</span><span>Jam Kerja</span><span>Gaji / Bulan</span><span>Status / Aksi</span></div>
+{workers.map(w=><div className="tr" key={w.id}><div><b>{w.name}</b><small>{w.gender}{w.phone?` • ${w.phone}`:""}</small></div><span>{w.position}</span><span>{w.workStart} - {w.workEnd}</span><span>{money(w.monthlySalary)}</span><div className="actions">{w.status==="Aktif"?<button className="danger small" onClick={()=>onResign(w.id)}>Resign</button>:<button className="danger small" onClick={()=>onDelete(w.id)}>Hapus</button>}<button className="secondary small" onClick={()=>onEdit(w)}>Edit</button></div></div>)}
+{!workers.length&&<div className="empty"><Users size={28}/><b>Belum ada pekerja</b><span>Tambahkan karyawan atau karyawati.</span></div>}</div></section></div>;
+}
+
+function History({
+  sales,
+  products,
+  members,
+  setSales,
+  setProducts,
+  setMembers
+}: {
+  sales: any[];
+  products: Product[];
+  members: Member[];
+  setSales: (sales: any[]) => void;
+  setProducts: (products: Product[]) => void;
+  setMembers: (members: Member[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<any | null>(null);
+  const filtered = sales.filter(x => {
+    const invoice = String(x.invoice_no ?? x.invoice ?? x.id ?? "").toLowerCase();
+    const member = String(x.member_id ?? "").toLowerCase();
+    return invoice.includes(query.toLowerCase()) || member.includes(query.toLowerCase());
+  });
+
+  const refund = (sale: any) => {
+    if (sale.refundedAt || sale.status === "refunded") {
+      return;
+    }
+    if (!window.confirm("Batalkan/refund transaksi ini? Stok akan dikembalikan dan transaksi ditandai refund.")) return;
+
+    try {
+      const latestSales = readLocal<any[]>("berkah-sumbing-sales", sales);
+      const currentSale = latestSales.find(x => x.id === sale.id);
+      if (!currentSale || currentSale.refundedAt || currentSale.status === "refunded") {
+        setSelected(null);
+        return;
+      }
+
+      const latestProducts = readLocal<Product[]>("berkah-sumbing-products", products);
+      const nextProducts = latestProducts.map(p => {
+        const item = (currentSale.items ?? []).find((i: any) => i.product_id === p.id);
+        return item ? { ...p, stock: p.stock + Number(item.qty || 0) } : p;
+      });
+      localStorage.setItem("berkah-sumbing-products", JSON.stringify(nextProducts));
+      setProducts(nextProducts);
+
+      const nextSales = latestSales.map(x => x.id === currentSale.id
+        ? { ...x, status: "refunded", refundedAt: new Date().toISOString() }
+        : x
+      );
+      localStorage.setItem("berkah-sumbing-sales", JSON.stringify(nextSales));
+      setSales(nextSales);
+
+      if (currentSale.member_id) {
+        const latestMembers = readLocal<Member[]>("berkah-sumbing-members", members);
+        const pointsEarned = Math.floor(Number(currentSale.total || 0) / 10000);
+        const pointsUsed = currentSale.payment_method === "Poin" || currentSale.payment === "Poin"
+          ? Number(currentSale.total || 0)
+          : 0;
+        const nextMembers = latestMembers.map(m => m.id === currentSale.member_id
+          ? { ...m, points: Math.max(0, m.points - pointsEarned + pointsUsed) }
+          : m
+        );
+        localStorage.setItem("berkah-sumbing-members", JSON.stringify(nextMembers));
+        setMembers(nextMembers);
+      }
+
+      setSelected(null);
+    } catch {
+      window.alert("Refund gagal disimpan. Data lokal tidak diubah sebagian.");
+    }
+  };
+
+  return <div className="dashboard">
+    <div className="head">
+      <div><h1>Riwayat Transaksi</h1><p>Lihat transaksi terakhir dan lakukan refund penuh bila diperlukan.</p></div>
+    </div>
+    <section className="tablecard">
+      <div className="tabletools">
+        <div className="search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Cari invoice atau ID member..."/></div>
+      </div>
+      <div className="producttable">
+        <div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span>Status</span></div>
+        {filtered.slice(0,100).map(x => {
+          const refunded = x.refundedAt || x.status === "refunded";
+          return <button key={x.id} className="tr historyrow" onClick={()=>setSelected(x)} style={{textAlign:"left",width:"100%"}}>
+            <span><b>{x.invoice_no ?? x.invoice ?? x.id}</b></span>
+            <span>{x.created_at || x.createdAt ? new Date(x.created_at ?? x.createdAt).toLocaleString("id-ID") : "-"}</span>
+            <span>{x.payment_method ?? x.payment ?? "-"}</span>
+            <b>{money(Number(x.total || 0))}</b>
+            <span className={refunded ? "stockout" : "stocklow"}>{refunded ? "Refund" : "Selesai"}</span>
+          </button>;
+        })}
+        {!filtered.length && <div className="empty"><Clock3 size={28}/><b>Belum ada transaksi</b><span>Transaksi yang selesai akan muncul di sini.</span></div>}
+      </div>
+    </section>
+
+    {selected && <div className="modalbackdrop" onClick={()=>setSelected(null)}>
+      <div className="modalcard" onClick={e=>e.stopPropagation()}>
+        <div className="formtitle"><div><b>Detail Transaksi</b><small>{selected.invoice_no ?? selected.invoice ?? selected.id}</small></div><button className="clear" onClick={()=>setSelected(null)}><X size={16}/></button></div>
+        <div className="stocklist">
+          {(selected.items ?? []).map((item:any)=><div className="stockrow" key={item.product_id}><div><b>{item.name}</b><small>{item.qty} × {money(Number(item.price||0))}</small></div><strong>{money(Number(item.qty||0)*Number(item.price||0))}</strong></div>)}
+          <div className="stockrow"><b>Total</b><strong>{money(Number(selected.total||0))}</strong></div>
+        </div>
+        {selected.refundedAt || selected.status === "refunded"
+          ? <div className="authnotice">Transaksi ini sudah direfund.</div>
+          : <button className="danger wide" onClick={()=>refund(selected)}>Refund Transaksi</button>}
+      </div>
+    </div>}
+  </div>;
+}
+
+function Reports({ sales, products }: { sales: any[]; products: Product[] }) {
+  const total=sales.reduce((s,x)=>s+Number(x.total||0),0);
+  const methods=["Tunai","QRIS","Transfer","Poin"];
+  return <div className="dashboard"><div className="head"><div><h1>Laporan</h1><p>Ringkasan transaksi lokal.</p></div></div>
+    <div className="stockstats"><div className="statcard"><span>Total Transaksi</span><b>{sales.length}</b></div><div className="statcard"><span>Total Penjualan</span><b>{money(total)}</b></div><div className="statcard"><span>Rata-rata</span><b>{money(sales.length?total/sales.length:0)}</b></div></div>
+    <div className="stockgrid"><section className="tablecard"><div className="formtitle"><div><b>Pembayaran</b><small>Nilai per metode.</small></div></div><div className="stocklist">{methods.map(m=><div className="stockrow" key={m}><b>{m}</b><strong>{money(sales.filter(x=>(x.payment_method ?? x.payment)===m).reduce((s,x)=>s+Number(x.total||0),0))}</strong></div>)}</div></section>
+    <section className="tablecard"><div className="formtitle"><div><b>Inventori</b><small>Ringkasan stok.</small></div></div><div className="stocklist"><div className="stockrow"><b>Produk</b><strong>{products.length}</strong></div><div className="stockrow"><b>Menipis</b><strong>{products.filter(p => { const stock = Math.max(0, Number(p.stock) || 0); return stock > 0 && stock <= 10; }).length}</strong></div><div className="stockrow"><b>Habis</b><strong>{products.filter(p => Math.max(0, Number(p.stock) || 0) === 0).length}</strong></div></div></section></div>
+    <section className="tablecard"><div className="formtitle"><div><b>Transaksi Terbaru</b><small>10 transaksi terakhir.</small></div></div><div className="producttable"><div className="tr th"><span>Invoice</span><span>Waktu</span><span>Metode</span><span>Total</span><span></span></div>{sales.slice(0,10).map(x=><div className="tr" key={x.id}><span>{x.invoice_no||x.invoice||x.id}</span><span>{(x.created_at ?? x.createdAt)?new Date(x.created_at ?? x.createdAt).toLocaleString("id-ID"):"-"}</span><span>{(x.payment_method ?? x.payment)||"-"}</span><b>{money(Number(x.total||0))}</b><span/></div>)}{!sales.length&&<div className="empty"><Receipt size={28}/><b>Belum ada transaksi</b><span>Transaksi Kasir akan muncul di sini.</span></div>}</div></section>
+  </div>;
+}
+
+function Dashboard({
+  name,
+  products,
+  onAdd
+}: {
+  name: string;
+  products: Product[];
+  onAdd?: () => void;
+}) {
+  // Dashboard mengikuti aturan stok yang sama: 0 = habis, 1-10 = menipis, >10 = aman.
+  const lowStock = products.filter(p => {
+    const stock = Math.max(0, Number(p.stock) || 0);
+    return stock > 0 && stock <= 10;
+  }).length;
+
+  const data = [
+    ["Produk", String(products.length), "tersimpan", ShoppingBag],
+    ["Stok Menipis", String(lowStock), "perlu dicek", AlertTriangle],
+    ["Penyimpanan", "Lokal", "perangkat ini", Store],
+    ["Status", "Aktif", "offline-ready", Wallet]
+  ] as const;
+
+  return (
+    <div className="dashboard">
+      <div className="head">
+        <div>
+          <h1>{name}</h1>
+          <p>Data POS tersimpan secara lokal di perangkat ini.</p>
+        </div>
+        {onAdd && (
+          <button className="primary" onClick={onAdd} type="button">
+            <Plus size={16} />
+            Tambah Produk
+          </button>
+        )}
+      </div>
+
+      <div className="stats">
+        {data.map(([label, value, note, Icon]) => (
+          <div className="stat" key={label}>
+            <div className="staticon">
+              <Icon size={18} />
+            </div>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <small>{note}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="note">
+        Modul <b>{name}</b> saat ini menggunakan penyimpanan lokal browser.
+        Data tidak tersinkron otomatis ke perangkat lain.
+      </div>
+    </div>
+  );
+}
