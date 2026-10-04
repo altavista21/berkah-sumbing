@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { LockKeyhole, LogIn, ShieldCheck, Store, UserPlus, Wallet, X } from "lucide-react";
 import "./auth.css";
 
@@ -21,7 +22,7 @@ async function hashPin(pin: string) {
 
 function newId() { return crypto.randomUUID(); }
 
-export default function AuthGate({ children }: { children: React.ReactNode }) {
+export default function AuthGate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [users, setUsers] = useState<AuthProfile[]>([]);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
@@ -210,7 +211,12 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             <label>Peran<select value={role} onChange={e => setRole(e.target.value as Role)}><option>Kasir</option><option>Kepala Cabang</option><option>Manajemen Pusat</option></select></label>
             <label>PIN<input inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digit" /></label>
             <label>Konfirmasi PIN<input inputMode="numeric" type="password" maxLength={6} value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ""))} placeholder="Ulangi PIN" /></label>
-            <button className="authprimary" onClick={register} disabled={busy}><ShieldCheck size={17}/>{busy ? "Menyimpan..." : "Daft{mode === "login" && (
+            <button className="authprimary" onClick={register} disabled={busy}><ShieldCheck size={17}/>{busy ? "Menyimpan..." : "Daftar Pengguna"}</button>
+            <button className="authsecondary" onClick={() => { setMode("login"); setNotice(""); }}><LogIn size={16}/> Ke login</button>
+          </>
+        )}
+
+        {mode === "login" && (
           <>
             <div className="authtitle"><h1>Masuk ke POS</h1><p>Pilih pengguna yang terdaftar lalu masukkan PIN.</p></div>
             <label>Pengguna<select value={selectedUserId} onChange={e => { setSelectedUserId(e.target.value); setProfile(users.find(u => u.id === e.target.value) ?? null); }}>
