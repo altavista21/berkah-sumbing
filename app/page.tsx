@@ -49,6 +49,15 @@ const money = (n: number) =>
     maximumFractionDigits: 0
   }).format(n);
 
+const readLocal = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const nav = [
   ["Kasir", ShoppingCart], ["Dashboard", LayoutDashboard], ["Produk", Package],
   ["Stok", Boxes], ["Member", Users], ["Laporan", BarChart3], ["Pengaturan", Settings]
@@ -75,8 +84,8 @@ export default function Page() {
       const savedProducts = localStorage.getItem("berkah-sumbing-products");
       const savedMembers = localStorage.getItem("berkah-sumbing-members");
 
-      const nextProducts = savedProducts ? JSON.parse(savedProducts) as Product[] : demoProducts;
-      const nextMembers = savedMembers ? JSON.parse(savedMembers) as Member[] : demoMembers;
+      const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
+      const nextMembers = readLocal<Member[]>("berkah-sumbing-members", demoMembers);
 
       setProducts(nextProducts);
       setMembers(nextMembers);
@@ -185,9 +194,16 @@ export default function Page() {
     setProcessing(true);
 
     try {
-      const sales = JSON.parse(
-        localStorage.getItem("berkah-sumbing-sales") || "[]"
-      ) as unknown[];
+      const sales = readLocal<unknown[]>("berkah-sumbing-sales", []);
+      const latestProducts = readLocal<Product[]>("berkah-sumbing-products", products);
+
+      for (const item of cart) {
+        const current = latestProducts.find(p => p.id === item.id);
+        if (!current || current.stock < item.qty) {
+          setNotice("Stok berubah. Silakan cek keranjang lalu coba lagi.");
+          return;
+        }
+      }
 
       const invoiceNo =
         "BS-" +
@@ -215,7 +231,7 @@ export default function Page() {
         JSON.stringify([sale, ...sales])
       );
 
-      const nextProducts = products.map(p => {
+      const nextProducts = latestProducts.map(p => {
         const item = cart.find(i => i.id === p.id);
         return item
           ? { ...p, stock: Math.max(0, p.stock - item.qty) }
@@ -229,10 +245,18 @@ export default function Page() {
       );
 
       if (member) {
+        const latestMembers = readLocal<Member[]>("berkah-sumbing-members", members);
+        const currentMember = latestMembers.find(m => m.id === member.id);
+
+        if (!currentMember) {
+          setNotice("Member sudah tidak tersedia. Silakan cari member lagi.");
+          return;
+        }
+
         const pointsEarned = Math.floor(total / 10000);
         const pointsUsed = payment === "Poin" ? total : 0;
 
-        const nextMembers = members.map(m =>
+        const nextMembers = latestMembers.map(m =>
           m.id === member.id
             ? {
                 ...m,
@@ -268,6 +292,7 @@ export default function Page() {
       setCash("");
       setMember(null);
       setMemberQuery("");
+      setPayment("Tunai");
     } catch {
       setNotice("Transaksi gagal disimpan ke penyimpanan perangkat.");
     } finally {
