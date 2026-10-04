@@ -1184,7 +1184,7 @@ export default function Page() {
           <Dashboard
             name={active}
             products={products}
-            onAdd={() => setActive("Produk")}
+            onAdd={profile?.role === "Manajemen Pusat" ? undefined : () => setActive("Produk")}
           />
         )}
       </section>
@@ -1352,7 +1352,7 @@ function Dashboard({
 }: {
   name: string;
   products: Product[];
-  onAdd: () => void;
+  onAdd?: () => void;
 }) {
   // Dashboard mengikuti aturan stok yang sama: 0 = habis, 1-10 = menipis, >10 = aman.
   const lowStock = products.filter(p => {
@@ -1374,10 +1374,12 @@ function Dashboard({
           <h1>{name}</h1>
           <p>Data POS tersimpan secara lokal di perangkat ini.</p>
         </div>
-        <button className="primary" onClick={onAdd} type="button">
-          <Plus size={16} />
-          Tambah Produk
-        </button>
+        {onAdd && (
+          <button className="primary" onClick={onAdd} type="button">
+            <Plus size={16} />
+            Tambah Produk
+          </button>
+        )}
       </div>
 
       <div className="stats">
