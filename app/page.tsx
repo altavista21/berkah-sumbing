@@ -163,7 +163,26 @@ export default function Page() {
 
       const nextProducts = readLocal<Product[]>("berkah-sumbing-products", demoProducts);
       const nextMembers = readLocal<Member[]>("berkah-sumbing-members", demoMembers);
-      const nextWorkers = readLocal<Worker[]>("berkah-sumbing-workers", demoWorkers);
+      let nextWorkers = readLocal<Worker[]>("berkah-sumbing-workers", demoWorkers);
+
+      // Migrasi otomatis demo worker lama Budi/Rina menjadi Andi/Yunita.
+      // Data pekerja buatan pengguna tidak disentuh.
+      if (savedWorkers) {
+        try {
+          const parsedWorkers = JSON.parse(savedWorkers);
+          const isOldDemoWorkers = Array.isArray(parsedWorkers) &&
+            parsedWorkers.length === 2 &&
+            parsedWorkers.some(w => w.id === "demo-worker-1" && w.name === "Budi Santoso") &&
+            parsedWorkers.some(w => w.id === "demo-worker-2" && w.name === "Rina Lestari");
+
+          if (isOldDemoWorkers) {
+            nextWorkers = demoWorkers;
+            localStorage.setItem("berkah-sumbing-workers", JSON.stringify(demoWorkers));
+          }
+        } catch {
+          // Jangan menimpa data jika storage pekerja rusak.
+        }
+      }
       setProducts(nextProducts);
       setMembers(nextMembers);
       setWorkers(nextWorkers);
