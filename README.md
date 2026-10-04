@@ -43,3 +43,7 @@ Implementasi mengikuti kebutuhan PRD v1.1. Nilai diskon tier, rasio poin, aturan
 ## Tahap berikutnya
 
 Tahap berikutnya adalah memastikan schema dan RLS Supabase siap, lalu mengaktifkan checkout nyata menggunakan checkout_sale. Setelah alur kasir stabil, modul stok/member/produk dan laporan dibangun di atas sumber data yang sama.
+
+## Deployment
+
+Production deployment menggunakan integrasi GitHub → Vercel. Setiap perubahan pada branch main akan memicu deployment production sehingga konfigurasi environment terbaru dapat ikut digunakan.
