@@ -40,3 +40,9 @@
 .backupbox{display:grid;gap:12px}
 .backupbox p{margin:0;color:var(--muted,#6b7280);font-size:13px;line-height:1.5}
 @media(max-width:700px){.settingsgrid{grid-template-columns:1fr}}
+
+.historyrow{border:0;background:transparent;font:inherit;color:inherit;cursor:pointer;padding:12px 14px}
+.historyrow:hover{background:#f8fafc}
+.modalbackdrop{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:18px}
+.modalcard{width:min(560px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 24px 80px rgba(15,23,42,.22)}
+.modalcard .wide{width:100%;margin-top:14px}
