@@ -1355,7 +1355,11 @@ function Dashboard({
   products: Product[];
   onAdd: () => void;
 }) {
-  const lowStock = products.filter(p => p.stock <= 5).length;
+  // Dashboard mengikuti aturan stok yang sama: 0 = habis, 1-10 = menipis, >10 = aman.
+  const lowStock = products.filter(p => {
+    const stock = Math.max(0, Number(p.stock) || 0);
+    return stock > 0 && stock <= 10;
+  }).length;
 
   const data = [
     ["Produk", String(products.length), "tersimpan", Package],
