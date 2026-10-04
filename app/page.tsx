@@ -501,7 +501,7 @@ export default function Page() {
       );
 
       if (member) {
-        const pointsEarned = Math.floor(total / 10000);
+        const pointsEarned = Math.floor(total / 50000) * 100;
         const pointsUsed = payment === "Poin" ? total : 0;
 
         const nextMembers = latestMembers.map(m =>
