@@ -58,7 +58,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   const setup = async () => {
     const cleanName = name.trim();
-    if (!cleanName || pin.length < 4 || pin.length > 6 || !/^\\d+$/.test(pin)) {
+    if (!cleanName || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
       setNotice("Nama dan PIN 4–6 digit wajib diisi.");
       return;
     }
@@ -83,7 +83,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   };
 
   const login = async () => {
-    if (!profile || !/^\\d{4,6}$/.test(pin)) {
+    if (!profile || !/^\d{4,6}$/.test(pin)) {
       setNotice("Masukkan PIN 4–6 digit.");
       return;
     }
@@ -177,8 +177,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             <div className="authtitle"><h1>Siapkan akses kasir</h1><p>Buat PIN lokal untuk mengunci aplikasi di perangkat ini.</p></div>
             <label>Nama pengguna<input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Andi" autoFocus /></label>
             <label>Peran<select value={role} onChange={e => setRole(e.target.value as Role)}><option>Kasir</option><option>Admin Cabang</option><option>Manajemen Pusat</option></select></label>
-            <label>PIN<input inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\\D/g, ""))} placeholder="4–6 digit" /></label>
-            <label>Konfirmasi PIN<input inputMode="numeric" type="password" maxLength={6} value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\\D/g, ""))} placeholder="Ulangi PIN" /></label>
+            <label>PIN<input inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digit" /></label>
+            <label>Konfirmasi PIN<input inputMode="numeric" type="password" maxLength={6} value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ""))} placeholder="Ulangi PIN" /></label>
             <button className="authprimary" onClick={setup} disabled={busy}><ShieldCheck size={17}/>{busy ? "Menyimpan..." : "Simpan & Lanjut"}</button>
           </>
         )}
@@ -187,7 +187,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           <>
             <div className="authtitle"><h1>Masuk ke POS</h1><p>Masukkan PIN pengguna <b>{profile?.name}</b>.</p></div>
             <div className="rolepill">{profile?.role}</div>
-            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
+            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
             <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
           </>
         )}
