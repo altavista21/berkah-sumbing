@@ -176,7 +176,8 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         setNotice("PIN persetujuan salah.");
         return;
       }
-      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: await hashPin(recoveryNewPin) } : u);
+      const newPinHash = await hashPin(recoveryNewPin);
+      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);
       saveUsers(nextUsers);
       setUsers(nextUsers);
       setRecoveryApproverPin("");
