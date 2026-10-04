@@ -10,7 +10,8 @@ POS multi-cabang dan membership berdasarkan PRD Aplikasi Kasir Berkah Sumbing v1
 - Katalog kasir dengan pencarian nama/SKU dan kategori.
 - Keranjang, quantity, diskon member, metode Tunai/QRIS/Transfer/Poin.
 - Fondasi database terpusat untuk cabang, produk, stok, shift, member, penjualan, mutasi stok, dan transfer stok.
-- Supabase client opsional melalui NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY.
+- Supabase client opsional melalui NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
+- NEXT_PUBLIC_SUPABASE_ANON_KEY tetap didukung sebagai fallback legacy.
 - RPC checkout_sale untuk checkout atomik: penjualan + detail item + pengurangan stok + mutasi stok + poin member dalam satu transaksi database.
 - Endpoint /api/health untuk mengecek apakah backend Supabase sudah terhubung.
 
@@ -31,9 +32,9 @@ POS multi-cabang dan membership berdasarkan PRD Aplikasi Kasir Berkah Sumbing v1
 npm install
 npm run dev
 
-Buat .env.local dari .env.example dan isi URL serta anon key Supabase.
+Buat .env.local dari .env.example dan isi URL serta publishable key Supabase. Jangan commit .env.local.
 
-Setelah schema dijalankan di Supabase, endpoint /api/health dapat digunakan untuk memastikan koneksi backend.
+Setelah schema dijalankan di Supabase, endpoint /api/health dapat digunakan untuk memastikan koneksi backend. Untuk deployment Vercel, variabel ini harus ditambahkan pada Project Settings > Environment Variables dan deployment perlu di-redeploy.
 
 ## Catatan PRD
 
@@ -41,4 +42,4 @@ Implementasi mengikuti kebutuhan PRD v1.1. Nilai diskon tier, rasio poin, aturan
 
 ## Tahap berikutnya
 
-Tahap berikutnya adalah mengganti data demo di terminal kasir dengan data Supabase, kemudian mengaktifkan checkout nyata menggunakan checkout_sale. Setelah alur kasir stabil, modul stok/member/produk dan laporan dibangun di atas sumber data yang sama.
+Tahap berikutnya adalah memastikan schema dan RLS Supabase siap, lalu mengaktifkan checkout nyata menggunakan checkout_sale. Setelah alur kasir stabil, modul stok/member/produk dan laporan dibangun di atas sumber data yang sama.
