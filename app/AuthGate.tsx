@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LockKeyhole, LogIn, ShieldCheck, Store, Wallet, X } from "lucide-react";
+import { LockKeyhole, LogIn, ShieldCheck, Store, UserPlus, Wallet, X } from "lucide-react";
 import "./auth.css";
 
-type Role = "Kasir" | "Admin Cabang" | "Manajemen Pusat";
-type AuthProfile = { name: string; role: Role; pinHash: string };
-type Shift = { id: string; openedAt: string; openingCash: number; role: Role; status: "open" };
+type Role = "Kasir" | "Kepala Cabang" | "Manajemen Pusat";
+type AuthProfile = { id: string; name: string; role: Role; pinHash: string };
+type Shift = { id: string; openedAt: string; openingCash: number; role: Role; userId: string; status: "open" };
 
 const AUTH_KEY = "berkah-sumbing-auth";
+const USERS_KEY = "berkah-sumbing-users";
 const SHIFT_KEY = "berkah-sumbing-shift";
 const SESSION_KEY = "berkah-sumbing-session";
 
@@ -18,13 +19,17 @@ async function hashPin(pin: string) {
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+function newId() { return crypto.randomUUID(); }
+
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [users, setUsers] = useState<AuthProfile[]>([]);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [session, setSession] = useState(false);
   const [shift, setShift] = useState<Shift | null>(null);
-  const [mode, setMode] = useState<"setup" | "login" | "shift">("login");
+  const [mode, setMode] = useState<"setup" | "login" | "signup" | "shift">("login");
   const [name, setName] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [role, setRole] = useState<Role>("Kasir");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -34,15 +39,28 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(AUTH_KEY);
+      const savedUsers = localStorage.getItem(USERS_KEY);
+      const legacy = localStorage.getItem(AUTH_KEY);
       const savedSession = localStorage.getItem(SESSION_KEY) === "1";
       const savedShift = localStorage.getItem(SHIFT_KEY);
       const parsedShift = savedShift ? JSON.parse(savedShift) as Shift : null;
-
-      if (!saved) setMode("setup");
-      else {
-        setProfile(JSON.parse(saved) as AuthProfile);
-        if (savedSession && parsedShift?.status === "open") {
+      let nextUsers: AuthProfile[] = [];
+      if (savedUsers) {
+        const parsed = JSON.parse(savedUsers) as AuthProfile[];
+        if (Array.isArray(parsed)) nextUsers = parsed;
+      } else if (legacy) {
+        const old = JSON.parse(legacy) as { name: string; role: Role; pinHash: string };
+        nextUsers = [{ id: newId(), ...old }];
+        localStorage.setItem(USERS_KEY, JSON.stringify(nextUsers));
+      }
+      setUsers(nextUsers);
+      if (nextUsers.length === 0) {
+        setMode("setup");
+      } else {
+        const current = nextUsers.find(u => u.id === parsedShift?.userId) ?? nextUsers[0];
+        setProfile(current);
+        setSelectedUserId(current.id);
+        if (savedSession && parsedShift?.status === "open" && parsedShift.userId === current.id) {
           setSession(true);
           setShift(parsedShift);
         } else {
@@ -56,9 +74,15 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const setup = async () => {
+  const saveUsers = (next: AuthProfile[]) => {
+    setUsers(next);
+    localStorage.setItem(USERS_KEY, JSON.stringify(next));
+    if (next[0]) localStorage.setItem(AUTH_KEY, JSON.stringify(next[0]));
+  };
+
+  const register = async () => {
     const cleanName = name.trim();
-    if (!cleanName || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
+    if (!cleanName || !/^\d{4,6}$/.test(pin)) {
       setNotice("Nama dan PIN 4–6 digit wajib diisi.");
       return;
     }
@@ -68,40 +92,46 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     }
     setBusy(true);
     try {
-      const next: AuthProfile = { name: cleanName, role, pinHash: await hashPin(pin) };
-      localStorage.setItem(AUTH_KEY, JSON.stringify(next));
+      const next: AuthProfile = { id: newId(), name: cleanName, role, pinHash: await hashPin(pin) };
+      const nextUsers = [...users, next];
+      saveUsers(nextUsers);
       setProfile(next);
+      setSelectedUserId(next.id);
+      setName("");
       setPin("");
       setPinConfirm("");
       setNotice("");
       setMode("login");
     } catch {
-      setNotice("Profil gagal disimpan di perangkat.");
+      setNotice("Pendaftaran gagal disimpan di perangkat.");
     } finally {
       setBusy(false);
     }
   };
 
   const login = async () => {
-    if (!profile || !/^\d{4,6}$/.test(pin)) {
-      setNotice("Masukkan PIN 4–6 digit.");
+    const selected = users.find(u => u.id === selectedUserId);
+    if (!selected || !/^\d{4,6}$/.test(pin)) {
+      setNotice("Pilih pengguna dan masukkan PIN 4–6 digit.");
       return;
     }
     setBusy(true);
     try {
-      const valid = (await hashPin(pin)) === profile.pinHash;
+      const valid = (await hashPin(pin)) === selected.pinHash;
       if (!valid) {
         setNotice("PIN salah.");
         return;
       }
+      setProfile(selected);
       localStorage.setItem(SESSION_KEY, "1");
       setPin("");
       const savedShift = localStorage.getItem(SHIFT_KEY);
       const parsed = savedShift ? JSON.parse(savedShift) as Shift : null;
-      if (parsed?.status === "open") {
+      if (parsed?.status === "open" && parsed.userId === selected.id) {
         setShift(parsed);
         setSession(true);
       } else {
+        setShift(null);
         setMode("shift");
       }
     } catch {
@@ -122,6 +152,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       openedAt: new Date().toISOString(),
       openingCash: cash,
       role: profile?.role ?? "Kasir",
+      userId: profile?.id ?? "",
       status: "open"
     };
     localStorage.setItem(SHIFT_KEY, JSON.stringify(next));
@@ -174,21 +205,37 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         {mode === "setup" && (
           <>
-            <div className="authtitle"><h1>Siapkan akses kasir</h1><p>Buat PIN lokal untuk mengunci aplikasi di perangkat ini.</p></div>
+            <div className="authtitle"><h1>Daftar pengguna utama</h1><p>Buat akun pertama untuk perangkat POS ini. Pilih Kepala Cabang atau Manajemen Pusat sebagai pengguna utama.</p></div>
             <label>Nama pengguna<input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Andi" autoFocus /></label>
-            <label>Peran<select value={role} onChange={e => setRole(e.target.value as Role)}><option>Kasir</option><option>Admin Cabang</option><option>Manajemen Pusat</option></select></label>
+            <label>Peran<select value={role} onChange={e => setRole(e.target.value as Role)}><option>Kasir</option><option>Kepala Cabang</option><option>Manajemen Pusat</option></select></label>
             <label>PIN<input inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digit" /></label>
             <label>Konfirmasi PIN<input inputMode="numeric" type="password" maxLength={6} value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ""))} placeholder="Ulangi PIN" /></label>
-            <button className="authprimary" onClick={setup} disabled={busy}><ShieldCheck size={17}/>{busy ? "Menyimpan..." : "Simpan & Lanjut"}</button>
+            <button className="authprimary" onClick={register} disabled={busy}><ShieldCheck size={17}/>{busy ? "Menyimpan..." : "Daft{mode === "login" && (
+          <>
+            <div className="authtitle"><h1>Masuk ke POS</h1><p>Pilih pengguna yang terdaftar lalu masukkan PIN.</p></div>
+            <label>Pengguna<select value={selectedUserId} onChange={e => { setSelectedUserId(e.target.value); setProfile(users.find(u => u.id === e.target.value) ?? null); }}>
+              {users.map(user => <option key={user.id} value={user.id}>{user.name} • {user.role}</option>)}
+            </select></label>
+            {profile && <div className="rolepill">{profile.role}</div>}
+            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
+            <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
+            <button className="authsecondary" onClick={() => { setMode("signup"); setNotice(""); setPin(""); setPinConfirm(""); setName(""); }}><UserPlus size={16}/> Daftar pengguna baru</button>
           </>
         )}
 
-        {mode === "login" && (
+        {mode === "signup" && (
           <>
-            <div className="authtitle"><h1>Masuk ke POS</h1><p>Masukkan PIN pengguna <b>{profile?.name}</b>.</p></div>
-            <div className="rolepill">{profile?.role}</div>
-            <label>PIN<input autoFocus inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && login()} placeholder="PIN" /></label>
-            <button className="authprimary" onClick={login} disabled={busy}><LogIn size={17}/>{busy ? "Memeriksa..." : "Masuk"}</button>
+            <div className="authtitle"><h1>Daftar pengguna</h1><p>Tambahkan akun Kepala Cabang, Kasir, atau Manajemen Pusat pada perangkat ini.</p></div>
+            <label>Nama pengguna<input value={name} onChange={e => setName(e.target.value)} placeholder="Nama lengkap" autoFocus /></label>
+            <label>Peran<select value={role} onChange={e => setRole(e.target.value as Role)}><option>Kasir</option><option>Kepala Cabang</option><option>Manajemen Pusat</option></select></label>
+            <label>PIN<input inputMode="numeric" type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digit" /></label>
+            <label>Konfirmasi PIN<input inputMode="numeric" type="password" maxLength={6} value={pinConfirm} onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ""))} placeholder="Ulangi PIN" /></label>
+            <button className="authprimary" onClick={register} disabled={busy}><UserPlus size={17}/>{busy ? "Mendaftarkan..." : "Daftar Pengguna"}</button>
+            <button className="authsecondary" onClick={() => { setMode("login"); setNotice(""); }}><LogIn size={16}/> Kembali ke login</button>
+          </>
+        )}
+
+        ." : "Masuk"}</button>
           </>
         )}
 
@@ -202,7 +249,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         )}
 
         {notice && <div className="authnotice">{notice}</div>}
-        <small className="authfoot">Mode lokal: PIN dan shift tersimpan hanya di perangkat ini.</small>
+        <small className="authfoot">Mode lokal: akun, PIN, dan shift tersimpan hanya di perangkat ini.</small>
       </section>
     </main>
   );
