@@ -188,6 +188,23 @@ export default function Page() {
           // Jangan menimpa data jika storage pekerja rusak.
         }
       }
+      const registeredUsers = readLocal<any[]>("berkah-sumbing-users", []);
+      for (const user of registeredUsers) {
+        if (user?.id && user?.name && !nextWorkers.some(w => w.id === user.id)) {
+          nextWorkers.push({
+            id: user.id,
+            name: user.name,
+            gender: "Karyawan",
+            position: user.role || "Pekerja",
+            phone: "",
+            monthlySalary: 0,
+            workStart: "08:00",
+            workEnd: "17:00",
+            status: "Aktif"
+          });
+        }
+      }
+      localStorage.setItem("berkah-sumbing-workers", JSON.stringify(nextWorkers));
       setProducts(nextProducts);
       setMembers(nextMembers);
       setWorkers(nextWorkers);
