@@ -170,7 +170,7 @@ button{cursor:pointer}
 @media(max-width:560px){.scannerbackdrop{padding:8px}.scannercard{padding:12px;border-radius:12px}.scannerpreview{aspect-ratio:3/4}}
 
 .receiptprint{display:none}
-.receiptpaper{box-sizing:border-box;width:80mm;max-width:100%;margin:0 auto;background:#fff;color:#111;font:14px/1.35 Arial,sans-serif;padding:4mm 4mm}
+.receiptpaper{box-sizing:border-box;width:80mm;max-width:80mm;margin:0;background:#fff;color:#111;font:14px/1.35 Arial,sans-serif;padding:4mm}
 .receipthead{text-align:center;border-bottom:1px dashed #111;padding-bottom:5px;margin-bottom:5px}
 .receipthead strong,.receipthead span{display:block}
 .receipthead strong{font-size:19px;letter-spacing:.5px}
@@ -183,12 +183,13 @@ button{cursor:pointer}
 .receiptgrand strong{font-size:18px}
 .receiptfoot{text-align:center;border-top:1px dashed #111;margin-top:7px;padding-top:5px;font-size:11px}
 @media print{
-  @page{size:80mm 140mm;margin:0}
-  html,body{width:80mm!important;margin:0!important;padding:0!important}
+  @page{size:80mm auto;margin:0}
+  html,body{margin:0!important;padding:0!important;background:#fff!important}
+  body{width:80mm!important}
   body *{visibility:hidden!important}
   .receiptprint,.receiptprint *{visibility:visible!important}
-  .receiptprint{display:block!important;position:absolute!important;left:0!important;top:0!important;width:80mm!important;height:140mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
-  .receiptpaper{box-sizing:border-box;width:80mm!important;height:140mm!important;max-width:none!important;margin:0!important;padding:4mm!important;box-shadow:none!important;overflow:hidden!important}
+  .receiptprint{display:block!important;position:static!important;width:80mm!important;margin:0!important;padding:0!important}
+  .receiptpaper{display:block!important;width:80mm!important;max-width:80mm!important;margin:0!important;padding:4mm!important;box-sizing:border-box!important}
 }
 
 .workerstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
