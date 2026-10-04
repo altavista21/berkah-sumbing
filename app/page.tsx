@@ -187,10 +187,6 @@ export default function Page() {
           // Jangan menimpa data jika storage pekerja rusak.
         }
       }
-        } catch {
-          // Jangan menimpa data jika storage pekerja rusak.
-        }
-      }
       setProducts(nextProducts);
       setMembers(nextMembers);
       setWorkers(nextWorkers);
