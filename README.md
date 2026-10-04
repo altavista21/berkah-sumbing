@@ -37,7 +37,8 @@ Aturan tersebut masih bersifat konfigurasi/prototipe dan perlu dikonfirmasi sebe
 
 ## Belum diimplementasikan
 
-- Login/PIN dan role Kasir/Admin Cabang/Manajemen Pusat.
+- Login/PIN lokal dan role Kasir/Admin Cabang/Manajemen Pusat.
+- Buka/tutup shift kasir dengan modal awal dan kunci sesi.
 - Multi-cabang dan sinkronisasi realtime antar perangkat.
 - Printer thermal Bluetooth/USB.
 - Struk atau notifikasi WhatsApp.
