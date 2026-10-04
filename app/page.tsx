@@ -70,6 +70,9 @@ export default function Page() {
   const [query, setQuery] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const barcodeRef = useRef<HTMLInputElement>(null);
+  const scannerVideoRef = useRef<HTMLVideoElement>(null);
+  const scannerStreamRef = useRef<MediaStream | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [category, setCategory] = useState("Semua");
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -211,6 +214,91 @@ export default function Page() {
     setNotice(found.name + " ditambahkan ke keranjang.");
     setBarcodeInput("");
     barcodeRef.current?.focus();
+  };
+
+  const openBarcodeScanner = async () => {
+    const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+
+    if (!BarcodeDetectorCtor || !navigator.mediaDevices?.getUserMedia) {
+      barcodeRef.current?.focus();
+      setNotice("Scanner kamera tidak didukung browser ini. Gunakan scanner barcode USB/Bluetooth atau ketik barcode lalu tekan Enter.");
+      return;
+    }
+
+    try {
+      scannerStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
+      });
+      setScannerOpen(true);
+    } catch {
+      setNotice("Kamera tidak bisa dibuka. Izinkan akses kamera atau gunakan scanner barcode hardware.");
+    }
+  };
+
+  useEffect(() => {
+    if (!scannerOpen) return;
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const run = async () => {
+      const video = scannerVideoRef.current;
+      const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+      const stream = scannerStreamRef.current;
+
+      if (!video || !BarcodeDetectorCtor || !stream) return;
+
+      video.srcObject = stream;
+      await video.play();
+
+      const detector = new BarcodeDetectorCtor({
+        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf"]
+      });
+
+      const scan = async () => {
+        if (cancelled) return;
+        try {
+          const codes = await detector.detect(video);
+          const code = codes?.[0]?.rawValue?.trim();
+
+          if (code) {
+            const found = products.find(p => p.barcode?.trim() === code || p.sku.trim() === code);
+
+            if (!found) {
+              setNotice("Barcode " + code + " tidak ditemukan.");
+            } else if (found.stock <= 0) {
+              setNotice(found.name + " sedang habis.");
+            } else {
+              add(found);
+              setNotice(found.name + " ditambahkan ke keranjang.");
+            }
+
+            closeBarcodeScanner();
+            return;
+          }
+        } catch {
+          // Kamera tetap berjalan. Coba frame berikutnya.
+        }
+
+        timer = window.setTimeout(scan, 180);
+      };
+
+      scan();
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [scannerOpen, products]);
+
+  const closeBarcodeScanner = () => {
+    scannerStreamRef.current?.getTracks().forEach(track => track.stop());
+    scannerStreamRef.current = null;
+    setScannerOpen(false);
   };
 
   const qty = (id: string, delta: number) => {
@@ -694,10 +782,8 @@ export default function Page() {
                     aria-label="Barcode produk"
                   />
                 </div>
-                <button className="scan" onClick={() => {
-                  barcodeRef.current?.focus();
-                }}>
-                  Scan
+                <button className="scan" type="button" onClick={openBarcodeScanner}>
+                  Scan Kamera
                 </button>
               </div>
 
@@ -746,6 +832,27 @@ export default function Page() {
                   </div>
                 )}
               </div>
+
+              {scannerOpen && (
+                <div className="scannerbackdrop" onClick={closeBarcodeScanner}>
+                  <div className="scannercard" onClick={e => e.stopPropagation()}>
+                    <div className="formtitle">
+                      <div>
+                        <b>Scan Barcode</b>
+                        <small>Arahkan kamera ke barcode produk.</small>
+                      </div>
+                      <button className="clear" type="button" onClick={closeBarcodeScanner}>Tutup</button>
+                    </div>
+                    <div className="scannerpreview">
+                      <video ref={scannerVideoRef} playsInline muted />
+                      <div className="scannerline" />
+                    </div>
+                    <div className="paymenthint">
+                      Scanner akan mencari barcode yang terdaftar di produk. Kamera tidak mengirim gambar ke server.
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             <aside className="checkout">
