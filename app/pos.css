@@ -25,3 +25,12 @@
   .tabletools select{width:100%}
   .formcard,.tablecard{padding:14px}
 }
+
+.stockstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.statcard{background:var(--card,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;padding:16px;display:grid;gap:5px}
+.statcard span{font-size:13px;color:var(--muted,#6b7280)}.statcard b{font-size:26px}.statcard small{color:var(--muted,#6b7280)}
+.stockgrid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.formgrid select{min-height:42px;border:1px solid var(--border,#d1d5db);border-radius:10px;padding:0 12px;background:var(--input,#fff);font:inherit}
+.stocklist{display:grid}.stockrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border,#eef0f2)}
+.stockrow small{display:block;color:var(--muted,#6b7280);margin-top:3px}.stocklow{color:#b54708}.stockout{color:#b42318}
+@media(max-width:700px){.stockstats{grid-template-columns:1fr}.stockgrid{grid-template-columns:1fr}}
