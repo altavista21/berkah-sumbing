@@ -130,7 +130,37 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setNotice("Pilih pengguna dan masukkan PIN 4–6 digit.");
       return;
     }
-    const attempts = pinAttempts[selected.id] ?? 0;\n    if (attempts >= 5) {\n      setNotice("PIN dikunci setelah 5 kali salah. Gunakan Lupa PIN untuk membuat PIN baru.");\n      setForgotOpen(true);\n      setRecoveryUserId(selected.id);\n      return;\n    }\n    setBusy(true);\n    try {\n      const valid = (await hashPin(pin)) === selected.pinHash;\n      if (!valid) {\n        const nextAttempts = attempts + 1;\n        const nextMap = { ...pinAttempts, [selected.id]: nextAttempts };\n        setPinAttempts(nextMap);\n        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));\n        setPin("");\n        if (nextAttempts >= 5) {\n          setNotice("PIN salah 5 kali. Akun dikunci, gunakan Lupa PIN untuk membuat PIN baru.");\n          setForgotOpen(true);\n          setRecoveryUserId(selected.id);\n        } else {\n          setNotice("PIN salah. Percobaan " + nextAttempts + " dari 5.");\n        }\n        return;\n      }\n      if (attempts > 0) {\n        const nextMap = { ...pinAttempts };\n        delete nextMap[selected.id];\n        setPinAttempts(nextMap);\n        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));\n      }
+    const attempts = pinAttempts[selected.id] ?? 0;
+    if (attempts >= 5) {
+      setNotice("PIN dikunci setelah 5 kali salah. Gunakan Lupa PIN untuk membuat PIN baru.");
+      setForgotOpen(true);
+      setRecoveryUserId(selected.id);
+      return;
+    }
+    setBusy(true);
+    try {
+      const valid = (await hashPin(pin)) === selected.pinHash;
+      if (!valid) {
+        const nextAttempts = attempts + 1;
+        const nextMap = { ...pinAttempts, [selected.id]: nextAttempts };
+        setPinAttempts(nextMap);
+        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));
+        setPin("");
+        if (nextAttempts >= 5) {
+          setNotice("PIN salah 5 kali. Akun dikunci, gunakan Lupa PIN untuk membuat PIN baru.");
+          setForgotOpen(true);
+          setRecoveryUserId(selected.id);
+        } else {
+          setNotice("PIN salah. Percobaan " + nextAttempts + " dari 5.");
+        }
+        return;
+      }
+      if (attempts > 0) {
+        const nextMap = { ...pinAttempts };
+        delete nextMap[selected.id];
+        setPinAttempts(nextMap);
+        localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextMap));
+      }
       setProfile(selected);
       localStorage.setItem(SESSION_KEY, "1");
       setPin("");
@@ -183,7 +213,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         return;
       }
       const newPinHash = await hashPin(recoveryNewPin);
-      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);\n      saveUsers(nextUsers);\n      const nextAttempts = { ...pinAttempts };\n      delete nextAttempts[target.id];\n      setPinAttempts(nextAttempts);\n      localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextAttempts));
+      const nextUsers = users.map(u => u.id === target.id ? { ...u, pinHash: newPinHash } : u);
+      saveUsers(nextUsers);
+      const nextAttempts = { ...pinAttempts };
+      delete nextAttempts[target.id];
+      setPinAttempts(nextAttempts);
+      localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(nextAttempts));
       setUsers(nextUsers);
       setRecoveryApproverPin("");
       setRecoveryNewPin("");
@@ -242,10 +277,16 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       .reduce((sum, s) => sum + Number(s.total || 0), 0);
     const expectedCash = shift.openingCash + cashSales;
     const input = window.prompt(
-      "Kas akhir fisik saat menutup shift.\n\n" +
-      "Modal awal: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash) + "\n" +
-      "Penjualan tunai: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(cashSales) + "\n" +
-      "Kas seharusnya: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(expectedCash) + "\n\nMasukkan kas akhir:",
+      "Kas akhir fisik saat menutup shift.
+
+" +
+      "Modal awal: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash) + "
+" +
+      "Penjualan tunai: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(cashSales) + "
+" +
+      "Kas seharusnya: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(expectedCash) + "
+
+Masukkan kas akhir:",
       String(expectedCash)
     );
     if (input === null) return;
