@@ -127,7 +127,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setPin("");
       const savedShift = localStorage.getItem(SHIFT_KEY);
       const parsed = savedShift ? JSON.parse(savedShift) as Shift : null;
-      if (parsed?.status === "open" && parsed.userId === selected.id) {
+      if (selected.role !== "Kasir") {
+        setShift(null);
+        setSession(true);
+      } else if (parsed?.status === "open" && parsed.userId === selected.id) {
         setShift(parsed);
         setSession(true);
       } else {
@@ -172,25 +175,48 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   };
 
   const closeShift = () => {
-    if (!window.confirm("Tutup shift sekarang? Pastikan transaksi hari ini sudah selesai.")) return;
+    if (!shift) return;
+    const sales = (() => { try { return JSON.parse(localStorage.getItem("berkah-sumbing-sales") || "[]") as any[]; } catch { return []; } })();
+    const cashSales = sales
+      .filter(s => s.status !== "refunded" && (s.payment_method ?? s.payment) === "Tunai" && new Date(s.created_at ?? s.createdAt ?? 0).getTime() >= new Date(shift.openedAt).getTime())
+      .reduce((sum, s) => sum + Number(s.total || 0), 0);
+    const expectedCash = shift.openingCash + cashSales;
+    const input = window.prompt(
+      "Kas akhir fisik saat menutup shift.\n\n" +
+      "Modal awal: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash) + "\n" +
+      "Penjualan tunai: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(cashSales) + "\n" +
+      "Kas seharusnya: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(expectedCash) + "\n\nMasukkan kas akhir:",
+      String(expectedCash)
+    );
+    if (input === null) return;
+    const endingCash = Number(input);
+    if (!Number.isFinite(endingCash) || endingCash < 0) {
+      setNotice("Kas akhir tidak valid. Shift belum ditutup.");
+      return;
+    }
+    const difference = endingCash - expectedCash;
+    const history = (() => { try { return JSON.parse(localStorage.getItem("berkah-sumbing-shift-history") || "[]") as any[]; } catch { return []; } })();
+    localStorage.setItem("berkah-sumbing-shift-history", JSON.stringify([{
+      ...shift, closedAt: new Date().toISOString(), endingCash, cashSales, expectedCash, difference, status: "closed"
+    }, ...history].slice(0, 200)));
     localStorage.removeItem(SHIFT_KEY);
     localStorage.removeItem(SESSION_KEY);
     setShift(null);
     setSession(false);
     setMode("login");
-    setNotice("Shift berhasil ditutup.");
+    setNotice("Shift ditutup. Selisih kas: " + new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(difference) + ".");
   };
 
   if (!ready) return <div className="authloading">Memuat Berkah Sumbing POS...</div>;
-  if (session && shift) {
+  if (session && (shift || profile?.role !== "Kasir")) {
     return (
       <>
         <div className="sessionbar">
           <span><Store size={14}/> {profile?.name} • {profile?.role}</span>
-          <span className="shiftstatus"><span className="dot"/> Shift aktif • modal {new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash)}</span>
+          {shift ? <span className="shiftstatus"><span className="dot"/> Shift aktif • modal {new Intl.NumberFormat("id-ID", {style:"currency",currency:"IDR",maximumFractionDigits:0}).format(shift.openingCash)}</span> : <span className="shiftstatus"><span className="dot"/> Mode {profile?.role}</span>}
           <div>
             <button onClick={lock} className="sessionbtn"><LockKeyhole size={14}/> Kunci</button>
-            <button onClick={closeShift} className="sessionbtn dangerbtn"><X size={14}/> Tutup Shift</button>
+            {shift && <button onClick={closeShift} className="sessionbtn dangerbtn"><X size={14}/> Tutup Shift</button>}
           </div>
         </div>
         <AuthContext.Provider value={{ profile, shift }}>{children}</AuthContext.Provider>
